@@ -1,14 +1,14 @@
 #pragma once
 
-#include "meshtypes.h"
+#include "types.h"
+#include "faces.h"
 
 #include <vector>
 #include <unordered_map>
 #include <limits>
 
+namespace mesh {
 namespace conn {
-
-using namespace mesh;
 
 struct fepair {
 	struct hash {
@@ -65,22 +65,22 @@ struct Conn {
 		vtxidx_t org;
 		fepair twin;
 	};
-	vtxidx_t num_vtx;
-	faceidx_t num_tri;
+	vtxidx_t mnum_vtx;
+	faceidx_t mnum_tri;
 	Faces &f;
 	std::vector<edgeorg> edges;
 
-	inline Conn(Faces &_f) : f(_f), num_vtx(0), num_tri(0)
+	inline Conn(Faces &_f) : f(_f), mnum_vtx(0), mnum_tri(0)
 	{}
 
 	inline faceidx_t add_face(ledgeidx_t ne)
 	{
-		num_tri += ne - 2;
+		mnum_tri += ne - 2;
 		faceidx_t idx = f.add(ne);
-		offset_t o = edges.size();
+		edgeidx_t o = edges.size();
 		edges.resize(edges.size() + ne);
-		for (int i = 0; i < ne; ++i) {
-			edges[o + 1].twin = fepair(idx, i);
+		for (edgeidx_t i = 0; i < ne; ++i) {
+			edges[o + i].twin = fepair(idx, i);
 		}
 		return idx;
 	}
@@ -97,11 +97,11 @@ struct Conn {
 	}
 	inline vtxidx_t num_vtx()
 	{
-		return num_vtx;
+		return mnum_vtx;
 	}
 	inline faceidx_t num_tri()
 	{
-		return num_tri;
+		return mnum_tri;
 	}
 	inline ledgeidx_t num_edges(faceidx_t fi) const
 	{
@@ -112,10 +112,10 @@ struct Conn {
 		return a.f();
 	}
 
-	inline void set_org(faceidx_t fi, lvtxidx_t v, vtxidx_t o)
+	inline void set_org(faceidx_t fi, ledgeidx_t v, vtxidx_t o)
 	{
 		edges[f.off(fi) + v].org = o;
-		num_vtx = std::max(num_vtx, o + 1);
+		mnum_vtx = std::max(mnum_vtx, o + 1);
 	}
 	inline fepair enext(fepair a) const
 	{
@@ -129,7 +129,7 @@ struct Conn {
 	{
 		return edges[f.off(a.f()) + a.e()].twin;
 	}
-	inline vtxidx_t org(faceidx_t fi, lvtxidx_t v) const
+	inline vtxidx_t org(faceidx_t fi, ledgeidx_t v) const
 	{
 		return edges[f.off(fi) + v].org;
 	}
@@ -161,7 +161,7 @@ struct Builder {
 
 	edgemap em;
 	faceidx_t cur_f;
-	lvtxidx_t cur_c;
+	ledgeidx_t cur_c;
 	vtxidx_t last_vtx;
 	vtxidx_t start_vtx;
 
@@ -187,25 +187,26 @@ struct Builder {
 			em.erase(succ.first);
 		}
 	}
-	inline faceidx_t begin_face(ledgeidx_t ne)
+	inline faceidx_t face_begin(ledgeidx_t ne)
 	{
 		cur_f = c.add_face(ne);
 		cur_c = 0;
-		last_vtx = std::numeric_limits<lvtxidx_t>::max();
+		last_vtx = std::numeric_limits<ledgeidx_t>::max();
 		return cur_f;
 	}
-	inline void end_face()
+	inline void face_end()
 	{
 		add_edge(last_vtx, start_vtx);
 	}
 	inline void set_org(vtxidx_t vtx)
 	{
 		c.set_org(cur_f, cur_c, vtx);
-		if (last_vtx != std::numeric_limits<lvtxidx_t>::max()) add_edge(last_vtx, vtx);
+		if (last_vtx != std::numeric_limits<ledgeidx_t>::max()) add_edge(last_vtx, vtx);
 		else start_vtx = vtx;
 		++cur_c;
 		last_vtx = vtx;
 	}
 };
 
+}
 }

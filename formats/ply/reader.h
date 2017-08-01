@@ -1,17 +1,21 @@
 #pragma once
 
+#include <iostream>
+#include <istream>
 #include <string>
 #include <vector>
-#include <iostream>
 #include <unordered_map>
 #include <limits>
 #include <numeric>
 #include <algorithm>
-#include "../structs/mixing.h"
-#include "../utils.h"
+#include <endian.h>
 
-namespace reader {
+#include "../../structs/mixing.h"
+#include "../../structs/types.h"
+#include "../../utils.h"
+
 namespace ply {
+namespace reader {
 
 inline float uint2float(uint32_t i)
 {
@@ -34,10 +38,10 @@ typedef mixing::Type Type;
 enum WellKnownProps {
 	PX, PY, PZ, PW,
 	NX, NY, NZ, NW,
-	CR, CG, CB,
-	CAR, CAG, CAB, CAC,
-	CDR, CDG, CDB, CDC,
-	CSR, CSG, CSB, CSP, CSC,
+	CR, CG, CB, CA,
+	CAR, CAG, CAB, CAA, CAC,
+	CDR, CDG, CDB, CDA, CDC,
+	CSR, CSG, CSB, CSA, CSP, CSC,
 	TU, TV, TW,
 	SCALE, CONFIDENCE, WKEND
 };
@@ -45,20 +49,20 @@ enum WellKnownProps {
 static std::unordered_map<std::string, int> lut_well_known = {
 	{ "x", PX }, { "y", PY }, { "z", PZ }, { "w", PW },
 	{ "nx", NX }, { "ny", NY }, { "nz", NZ }, { "nw", NW },
-	{ "red", CR }, { "green", CG }, { "blue", CB },
-	{ "ambient_red", CAR }, { "ambient_green", CAG }, { "ambient_blue", CAB }, { "ambient_coeff", CAC },
-	{ "diffuse_red", CDR }, { "diffuse_green", CDG }, { "diffuse_blue", CDB }, { "diffuse_coeff", CDC },
-	{ "specular_red", CSR }, { "specular_green", CSG }, { "specular_blue", CSB }, { "specular_power", CSP }, { "specular_coeff", CSC },
+	{ "red", CR }, { "green", CG }, { "blue", CB }, { "alpha", CA },
+	{ "ambient_red", CAR }, { "ambient_green", CAG }, { "ambient_blue", CAB }, { "ambient_alpha", CAA }, { "ambient_coeff", CAC },
+	{ "diffuse_red", CDR }, { "diffuse_green", CDG }, { "diffuse_blue", CDB }, { "diffuse_alpha", CDA }, { "diffuse_coeff", CDC },
+	{ "specular_red", CSR }, { "specular_green", CSG }, { "specular_blue", CSB }, { "specular_alpha", CSA }, { "specular_power", CSP }, { "specular_coeff", CSC },
 	{ "u", TU }, { "tu", TU }, { "v", TV }, { "tv", TV }, { "tw", TW },
 	{ "value", SCALE }, { "scale", SCALE }, { "confidence", CONFIDENCE },
 };
 static const mixing::Interp lut_interp[/*27*/] = {
 	mixing::POS, mixing::POS, mixing::POS, mixing::POS,
 	mixing::NORMAL, mixing::NORMAL, mixing::NORMAL, mixing::NORMAL,
-	mixing::COLOR, mixing::COLOR, mixing::COLOR,
-	mixing::COLOR_AMBIENT, mixing::COLOR_AMBIENT, mixing::COLOR_AMBIENT, mixing::COLOR_AMBIENT,
-	mixing::COLOR_DIFFUSE, mixing::COLOR_DIFFUSE, mixing::COLOR_DIFFUSE, mixing::COLOR_DIFFUSE,
-	mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR,
+	mixing::COLOR, mixing::COLOR, mixing::COLOR, mixing::COLOR,
+	mixing::COLOR_AMBIENT, mixing::COLOR_AMBIENT, mixing::COLOR_AMBIENT, mixing::COLOR_AMBIENT, mixing::COLOR_AMBIENT,
+	mixing::COLOR_DIFFUSE, mixing::COLOR_DIFFUSE, mixing::COLOR_DIFFUSE, mixing::COLOR_DIFFUSE, mixing::COLOR_DIFFUSE,
+	mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR, mixing::COLOR_SPECULAR,
 	mixing::TEX, mixing::TEX, mixing::TEX,
 	mixing::SCALE, mixing::CONFIDENCE,
 };
@@ -233,7 +237,8 @@ Header read_header(std::istream &is)
 template <typename T>
 T cpval2ptr(unsigned char *ptr, T val)
 {
-	std::copy(&val, &val + sizeof(T), ptr);
+	unsigned char *src = (unsigned char*)&val;
+	std::copy(src, src + sizeof(T), ptr);
 	return val;
 }
 struct ASCIIReader {
@@ -322,7 +327,7 @@ void readloop(std::istream &is, const Header &header, const std::vector<int> *pe
 			for (int j = 0; j < elem.len; ++j) {
 				for (int k = 0; k < elem.size(); ++k) {
 					const Property &prop = elem[k];
-					if (perm[j] == -1) { // not an attribute
+					if (perm[k] == -1) { // not an attribute
 						uint64_t listlen = read(is, ign, prop.list_len_type);
 						if (prop.list_len_type != mixing::NONE && i == face_idx && k == vi_idx) { // ...but connectivity
 							handle.face_begin(listlen);
@@ -369,20 +374,23 @@ void read(std::istream &is, H &handle)
 		mixing::Fmt fmt;
 		mixing::Interps interps;
 		header[idxs[i]].init(perms[i], fmt, interps);
-		handle.add_list(fmt, interps);
+		handle.add_list(fmt, interps, i == 0 ? mesh::attr::FACE : mesh::attr::VTX);
 		handle.alloc_attr(i, header[idxs[i]].len);
 	}
-	handle.bind_face_list(handle.add_face_region(1), 0, 0);
-	handle.bind_vtx_list(handle.add_vtx_region(1), 0, 1);
+	handle.init_bindings(1, 1, 0);
+	handle.bind_reg_facelist(handle.add_face_region(1, 0), 0, 0);
+	handle.bind_reg_vtxlist(handle.add_vtx_region(1), 0, 1);
 
 	int nf = header[idxs[0]].len, nv = header[idxs[1]].len;
 	handle.alloc_face(nf);
 	handle.alloc_vtx(nv);
 	for (int i = 0; i < nf; ++i) {
 		handle.bind_face_attr(i, 0, i);
+		handle.face_reg(i, 0);
 	}
 	for (int i = 0; i < nv; ++i) {
 		handle.bind_vtx_attr(i, 0, i);
+		handle.vtx_reg(i, 0);
 	}
 
 	// load mesh

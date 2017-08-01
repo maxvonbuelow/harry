@@ -224,17 +224,49 @@ struct View {
 			}
 		}
 	}
+
+	void print(std::ostream &os, int i)
+	{
+		switch (fmt.type(i)) {
+		case CHAR:
+		case SHORT:
+		case INT:
+			os << get<int32_t>(i);
+			break;
+		case UCHAR:
+		case USHORT:
+		case UINT:
+			os << get<uint32_t>(i);
+			break;
+		case FLOAT:
+		case DOUBLE:
+			os << get<double>(i);
+			break;
+		}
+	}
+	void print(std::ostream &os, bool append = false, const char *delim = "\t")
+	{
+		for (int i = 0; i < fmt.size(); ++i) {
+			if (i || append) os << delim;
+			print(os, i);
+		}
+	}
 };
 
 struct Array {
 private:
 	std::vector<unsigned char> mdata;
-	Fmt fmt;
+	Fmt mfmt;
 	std::size_t msize;
 
 public:
-	Array(const Fmt &_fmt) : fmt(_fmt), msize(0)
+	Array(const Fmt &_fmt) : mfmt(_fmt), msize(0)
 	{}
+
+	const Fmt &fmt()
+	{
+		return mfmt;
+	}
 
 	unsigned char *data()
 	{
@@ -251,7 +283,7 @@ public:
 	void resize(std::size_t size)
 	{
 		msize = size;
-		mdata.resize(size * fmt.bytes());
+		mdata.resize(size * mfmt.bytes());
 		mdata.shrink_to_fit();
 	}
 	std::size_t frontidx()
@@ -277,7 +309,7 @@ public:
 	}
 	View operator[](std::size_t i)
 	{
-		return View(data() + i * fmt.bytes(), fmt);
+		return View(data() + i * mfmt.bytes(), mfmt);
 	}
 };
 
