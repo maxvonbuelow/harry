@@ -6,6 +6,7 @@
 #include <fstream>
 #include <endian.h>
 
+#include "hry/reader.h"
 #include "ply/reader.h"
 
 namespace unified {
@@ -39,6 +40,9 @@ void read(std::istream &is, const std::string &fn, H &handle)
 	std::string dir = fn.substr(0, fn.find_last_of("/\\"));
 	switch (get_mesh_type(is, fn))
 	{
+	case HRY:
+		hry::reader::read(is, handle);
+		break;
 	case PLY:
 		ply::reader::read(is, handle);
 		break;

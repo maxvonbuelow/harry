@@ -5,6 +5,7 @@
 #include <ostream>
 #include <fstream>
 
+#include "hry/writer.h"
 #include "ply/writer.h"
 
 namespace unified {
@@ -33,6 +34,9 @@ void write(std::ostream &os, const std::string &fn, H &handle, FileType type = U
 	type = type == UNKNOWN ? get_mesh_type(fn) : type;
 	switch (type)
 	{
+	case HRY:
+		hry::writer::write(os, handle);
+		break;
 	case PLY:
 		ply::writer::write(os, handle);
 		break;
