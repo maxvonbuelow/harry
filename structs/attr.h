@@ -9,14 +9,19 @@
 namespace mesh {
 namespace attr {
 
-enum Target { FACE, VTX, CORNER };
+enum Target { FACE, VTX, CORNER, NONE };
 
 struct Attr : mixing::Array {
 	Target target;
-	mixing::Interps interps;
+	mixing::Interps minterps;
 
-	Attr(const mixing::Fmt &fmt, const mixing::Interps &_interps, Target &_target) : mixing::Array(fmt), interps(_interps), target(_target)
+	Attr(const mixing::Fmt &fmt, const mixing::Interps &_interps, Target &_target) : mixing::Array(fmt), minterps(_interps), target(_target)
 	{}
+
+	mixing::Interps &interps()
+	{
+		return minterps;
+	}
 };
 
 struct Bindings {

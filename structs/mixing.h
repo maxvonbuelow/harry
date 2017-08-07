@@ -101,19 +101,49 @@ struct Interps {
 	{
 		int nameid = interp - OTHER;
 		if (nameid < 0) return;
-		if (nameid >= names.size()) names.resize(nameid + 1);
+		if (nameid >= names.size()) names.resize(nameid + 1, "");
 		names[nameid] = name;
 	}
 
-	void append(int interp, int off)
+	void append(int interp, int off = -1)
 	{
 		if (interp >= offs.size()) {
 			offs.resize(interp + 1, -1);
 			lens.resize(interp + 1, 0);
+			if (interp >= OTHER) names.resize(interp - OTHER + 1, "");
 		}
 
 		if (offs[interp] == -1) offs[interp] = off;
 		++lens[interp];
+	}
+	void appendn(int interp, int n)
+	{
+		for (int i = 0; i < n; ++i) {
+			append(interp);
+		}
+	}
+
+	int size() const
+	{
+		return offs.size();
+	}
+	int off(int i) const
+	{
+		return offs[i];
+	}
+	int len(int i) const
+	{
+		return lens[i];
+	}
+	bool have_name(int i) const
+	{
+		return i >= OTHER;
+	}
+	const std::string &name(int i) const
+	{
+		int nameid = i - OTHER;
+		if (nameid < 0) return "";
+		return names[nameid];
 	}
 };
 

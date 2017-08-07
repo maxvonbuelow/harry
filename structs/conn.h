@@ -180,11 +180,12 @@ struct Builder {
 	{
 		fepair p(cur_f, cur_c - 1);
 
-		std::pair<edgemap::iterator, bool> succ = em.insert(std::make_pair(edgemap_e(a, b), p));
+		em.insert(std::make_pair(edgemap_e(a, b), p));
+		edgemap::iterator twin = em.find(edgemap_e(b, a));
 
-		if (!succ.second) {
-			c.fmerge(succ.first->second, p);
-			em.erase(succ.first);
+		if (twin != em.end()) {
+			c.fmerge(twin->second, p);
+			em.erase(twin);
 		}
 	}
 	inline faceidx_t face_begin(ledgeidx_t ne)

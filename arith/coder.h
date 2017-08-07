@@ -20,7 +20,6 @@ struct Coder {
 
 template <typename TF = uint64_t, typename TBO = uint64_t>
 struct Encoder : Coder<TF> {
-
 	using Coder<TF>::b;
 	using Coder<TF>::HALF;
 	using Coder<TF>::QUARTER;

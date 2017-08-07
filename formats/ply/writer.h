@@ -53,8 +53,8 @@ inline std::string interp2name(const mixing::Interps &interps, int interp, int o
 		}
 		return std::string("unknown_") + std::to_string(interp) + std::string("_") + std::to_string(off);
 	}
-	if (interps.lens[interp] == 1) return interps.names[interp - mixing::OTHER];
-	return interps.names[interp] + std::string("_") + std::to_string(off);
+	if (interps.len(interp) == 1) return interps.name(interp);
+	return interps.name(interp) + std::string("_") + std::to_string(off);
 }
 
 struct BinWriter {
@@ -95,7 +95,7 @@ struct ASCIIWriter {
 template <typename H, typename W>
 void writeloop(std::ostream &os, H &handle, const std::vector<bool> &isset_vtx, const std::vector<bool> &isset_face, W &&write)
 {
-	for (mesh::vtxidx_t i = 0; i < handle.attrs.num_vtx(); ++i) {
+	for (mesh::vtxidx_t i = 0; i < handle.num_vtx(); ++i) {
 		mesh::regidx_t r = handle.attrs.vtx2reg(i);
 		for (int j = 0; j < handle.attrs.num_bindings_vtx_reg(r); ++j) {
 			mesh::listidx_t as = handle.attrs.binding_reg_vtxlist(r, j);
@@ -105,7 +105,7 @@ void writeloop(std::ostream &os, H &handle, const std::vector<bool> &isset_vtx, 
 		write.next(os);
 	}
 
-	for (mesh::faceidx_t i = 0; i < handle.attrs.num_face(); ++i) {
+	for (mesh::faceidx_t i = 0; i < handle.num_face(); ++i) {
 		mesh::regidx_t r = handle.attrs.face2reg(i);
 		uint8_t ne = handle.conn.num_edges(i);
 		write.num_edges(os, ne);
@@ -148,28 +148,28 @@ void write(std::ostream &os, H &handle, bool ascii = false)
 
 	std::vector<bool> isset_vtx(handle.attrs.size(), false), isset_face(handle.attrs.size(), false);
 
-	os << "element vertex " << handle.attrs.num_vtx() << "\n";
+	os << "element vertex " << handle.num_vtx() << "\n";
 	for (mesh::listidx_t as : *as_vtx) {
 		const mixing::Fmt &fmt = handle.attrs[as].fmt();
-		const mixing::Interps &interps = handle.attrs[as].interps;
+		const mixing::Interps &interps = handle.attrs[as].interps();
 		isset_vtx[as] = true;
-		for (int i = 0; i < interps.offs.size(); ++i) {
-			for (int j = 0; j < interps.lens[i]; ++j) {
-				os << "property " << type2str(fmt.type(interps.offs[i] + j)) << " " << interp2name(interps, i, j) << "\n";
+		for (int i = 0; i < interps.size(); ++i) {
+			for (int j = 0; j < interps.len(i); ++j) {
+				os << "property " << type2str(fmt.type(interps.off(i) + j)) << " " << interp2name(interps, i, j) << "\n";
 			}
 		}
 	}
 
-	os << "element face " << handle.attrs.num_face() << "\n";
+	os << "element face " << handle.num_face() << "\n";
 	os << "property list uchar uint vertex_indices\n";
 	for (mesh::listidx_t as : *as_face) {
 		const mixing::Fmt &fmt = handle.attrs[as].fmt();
-		const mixing::Interps &interps = handle.attrs[as].interps;
+		const mixing::Interps &interps = handle.attrs[as].interps();
 		isset_face[as] = true;
 
-		for (int i = 0; i < interps.offs.size(); ++i) {
-			for (int j = 0; j < interps.lens[i]; ++j) {
-				os << "property " << type2str(fmt.type(interps.offs[i] + j)) << " " << interp2name(interps, i, j) << "\n";
+		for (int i = 0; i < interps.size(); ++i) {
+			for (int j = 0; j < interps.len(i); ++j) {
+				os << "property " << type2str(fmt.type(interps.off(i) + j)) << " " << interp2name(interps, i, j) << "\n";
 			}
 		}
 	}

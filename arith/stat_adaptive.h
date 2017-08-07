@@ -21,7 +21,7 @@ struct AdaptiveStatisticsModule {
 	TC n;
 	TS mid;
 
-	AdaptiveStatisticsModule(TC _n) : F(_n, 0), C(_n, 0), n(_n), mid(msb(_n))
+	AdaptiveStatisticsModule(TC _n = 256) : F(_n, 0), C(_n, 0), n(_n), mid(msb(_n))
 	{}
 
 	void range(TS s, TF &l, TF &h)

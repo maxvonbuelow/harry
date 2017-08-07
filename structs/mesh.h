@@ -16,6 +16,20 @@ struct Mesh {
 
 	Mesh() : conn(faces), attrs(faces)
 	{}
+
+	// generic
+	faceidx_t num_face() const
+	{
+		return attrs.num_face();
+	}
+	vtxidx_t num_vtx() const
+	{
+		return attrs.num_vtx();
+	}
+	edgeidx_t num_edge() const
+	{
+		return attrs.num_edge();
+	}
 };
 
 struct Builder {
@@ -24,6 +38,16 @@ struct Builder {
 
 	Builder(Mesh &_mesh) : mesh(_mesh), builder_conn(_mesh.conn)
 	{}
+
+	// Generic
+	vtxidx_t num_vtx()
+	{
+		return mesh.num_vtx();
+	}
+	faceidx_t num_face()
+	{
+		return mesh.num_face();
+	}
 
 	// Attributes
 	void init_bindings(listidx_t num_bindings_face, listidx_t num_bindings_vtx, listidx_t num_bindings_corner)
