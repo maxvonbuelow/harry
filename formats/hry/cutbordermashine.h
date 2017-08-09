@@ -11,6 +11,8 @@
 #include "../../structs/mesh.h"
 #include "../../assert.h"
 
+#include "attrcode.h"
+
 
 #define INVALID_PAIR mesh::conn::fepair()
 
@@ -84,6 +86,8 @@ mesh::conn::fepair getVertexData(C &conn, std::unordered_set<mesh::faceidx_t> &r
 template <typename H, typename T, typename W, typename P>
 CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 {
+	attrcode::AttrCoder<W> ac(mesh, wr);
+
 	typedef DataTpl<EncoderData> Data;
 	typedef ElementTpl<EncoderData> Element;
 	CutBorder<EncoderData> cutBorder(100 + 2000, 10 * std::sqrt(mesh.num_vtx()) + 10000000);
@@ -126,7 +130,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			wr.tri110(ntri, perm.get(v0.idx), perm.get(v1.idx));
 // 			ac.face(f);
 // 			ac.face(f, e0.e());
-// 			ac.vtx(f, e2.e());
+			ac.vtx(f, e2.e());
 			perm.map(v2.idx, vertexIdx++);
 			initop = CutBorderBase::TRI110;
 			nm += 2;
@@ -134,7 +138,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			wr.tri011(ntri, perm.get(v1.idx), perm.get(v2.idx));
 // 			ac.face(f);
 // 			ac.face(f, e0.e());
-// 			ac.vtx(f, e0.e());
+			ac.vtx(f, e0.e());
 			perm.map(v0.idx, vertexIdx++);
 			// swap into decoding order
 // 			std::swap(v1, v0); std::swap(e1, e0);
@@ -145,7 +149,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			wr.tri101(ntri, perm.get(v2.idx), perm.get(v0.idx));
 // 			ac.face(f);
 // 			ac.face(f, e0.e());
-// 			ac.vtx(f, e1.e());
+			ac.vtx(f, e1.e());
 			perm.map(v1.idx, vertexIdx++);
 			// swap into decoding order
 // 			std::swap(v2, v0); std::swap(e2, e0);
@@ -158,8 +162,8 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			wr.tri100(ntri, perm.get(v0.idx));
 // 			ac.face(f);
 // 			ac.face(f, e0.e());
-// 			ac.vtx(f, e1.e());
-// 			ac.vtx(f, e2.e());
+			ac.vtx(f, e1.e());
+			ac.vtx(f, e2.e());
 			perm.map(v1.idx, vertexIdx++); perm.map(v2.idx, vertexIdx++);
 			initop = CutBorderBase::TRI100;
 			++nm;
@@ -167,8 +171,8 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			wr.tri010(ntri, perm.get(v1.idx));
 // 			ac.face(f);
 // 			ac.face(f, e0.e());
-// 			ac.vtx(f, e2.e());
-// 			ac.vtx(f, e0.e());
+			ac.vtx(f, e2.e());
+			ac.vtx(f, e0.e());
 			perm.map(v2.idx, vertexIdx++); perm.map(v0.idx, vertexIdx++);
 			// swap into decoding order
 // 			std::swap(v1, v0); std::swap(e1, e0);
@@ -179,8 +183,8 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			wr.tri001(ntri, perm.get(v2.idx));
 // 			ac.face(f);
 // 			ac.face(f, e0.e());
-// 			ac.vtx(f, e0.e());
-// 			ac.vtx(f, e1.e());
+			ac.vtx(f, e0.e());
+			ac.vtx(f, e1.e());
 			perm.map(v0.idx, vertexIdx++); perm.map(v1.idx, vertexIdx++);
 			// swap into decoding order
 // 			std::swap(v2, v0); std::swap(e2, e0);
@@ -193,9 +197,9 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			wr.initial(ntri);
 // 			ac.face(f);
 // 			ac.face(f, e0.e());
-// 			ac.vtx(f, e0.e());
-// 			ac.vtx(f, e1.e());
-// 			ac.vtx(f, e2.e());
+			ac.vtx(f, e0.e());
+			ac.vtx(f, e1.e());
+			ac.vtx(f, e2.e());
 			perm.map(v0.idx, vertexIdx++); perm.map(v1.idx, vertexIdx++); perm.map(v2.idx, vertexIdx++);
 			initop = CutBorderBase::INIT;
 		}
@@ -288,7 +292,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 					wr.newvertex(inner ? 0 : ntri); // TODO
 // 					if (!inner) ac.face(f);
 // 					if (!inner) ac.face(f, e0.e());
-// 					ac.vtx(f, e2.e());
+					ac.vtx(f, e2.e());
 					perm.map(v2.idx, vertexIdx++);
 				} else {
 					int i, p;

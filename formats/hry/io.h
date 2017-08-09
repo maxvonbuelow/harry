@@ -2,6 +2,7 @@
 
 #include "../../structs/mixing.h"
 #include "models.h"
+#include "transform.h"
 
 enum AttrType { DATA, HIST, LHIST };
 
@@ -123,7 +124,7 @@ private:
 
 	void elem(int i)
 	{
-		models.conn_elem.template encode<uint32_t>(coder, /*zigzag_enc(i)*/i);
+		models.conn_elem.template encode<uint32_t>(coder, transform::zigzag_encode(i));
 	}
 	void part(int p)
 	{
@@ -162,7 +163,7 @@ struct reader {
 	}
 	int32_t elem()
 	{
-		return /*zigzag_dec(*/models.conn_elem.template decode<int32_t>(coder)/*)*/;
+		return transform::zigzag_decode(models.conn_elem.template decode<int32_t>(coder));
 	}
 	int16_t part()
 	{

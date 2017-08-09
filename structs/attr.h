@@ -12,15 +12,34 @@ namespace attr {
 enum Target { FACE, VTX, CORNER, NONE };
 
 struct Attr : mixing::Array {
+	mixing::Array maccu;
+	mixing::Array mcache;
+	mixing::Array mbig;
 	Target target;
 	mixing::Interps minterps;
 
-	Attr(const mixing::Fmt &fmt, const mixing::Interps &_interps, Target &_target) : mixing::Array(fmt), minterps(_interps), target(_target)
-	{}
+	Attr(const mixing::Fmt &fmt, const mixing::Interps &_interps, Target &_target) : mixing::Array(fmt), maccu(fmt), mcache(fmt), mbig(fmt.big()), minterps(_interps), target(_target)
+	{
+		big().resize(1);
+		accu().resize(1);
+	}
 
 	mixing::Interps &interps()
 	{
 		return minterps;
+	}
+
+	mixing::Array &accu()
+	{
+		return maccu;
+	}
+	mixing::Array &cache()
+	{
+		return mcache;
+	}
+	mixing::Array &big()
+	{
+		return mbig;
 	}
 };
 

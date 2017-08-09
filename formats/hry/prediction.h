@@ -1,6 +1,16 @@
 #pragma once
 
+#include "transform.h"
+
 namespace pred {
+
+template <typename T>
+int quant2bits(int q)
+{
+	return q == 0 ? sizeof(T) << 3 : q;
+}
+
+
 template <class T>
 T mask(int bits)
 {
@@ -80,18 +90,18 @@ T decodeDelta(const T delta, const T pred, const int bits, std::false_type)
 template <class T>
 T decodeDelta(const T delta, const T pred, const int bits, std::true_type)
 {
-	int_t<sizeof(T)> predint = float2int(pred);
-	int_t<sizeof(T)> deltaint = *((int_t<sizeof(T)>*)&delta);
-	int_t<sizeof(T)> res = decodeDelta((uint_t<sizeof(T)>)deltaint^0x80000000, (uint_t<sizeof(T)>)predint^0x80000000, bits/*sizeof(T)<<3*/, std::false_type());
-// 	int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
-	T res2 = int2float(res);
+	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
+	transform::int_t<sizeof(T)> deltaint = *((transform::int_t<sizeof(T)>*)&delta);
+	transform::int_t<sizeof(T)> res = decodeDelta((transform::uint_t<sizeof(T)>)deltaint^0x80000000, (transform::uint_t<sizeof(T)>)predint^0x80000000, bits/*sizeof(T)<<3*/, std::false_type());
+// 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
+	T res2 = transform::int2float(res);
 	return res2;
 }
 
 template <class T>
-T decodeDelta(const T delta, const T pred, const int bits)
+T decodeDelta(const T delta, const T pred, const int q)
 {
-	return decodeDelta(delta, pred, bits, std::is_floating_point<T>());
+	return decodeDelta(delta, pred, quant2bits<T>(q), std::is_floating_point<T>());
 }
 
  
@@ -123,16 +133,17 @@ T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
 template <class T>
 T encodeDelta(const T raw, const T pred, const int bits, std::true_type)
 {
-	int_t<sizeof(T)> predint = float2int(pred);
-	int_t<sizeof(T)> rawint = float2int(raw);
-	int_t<sizeof(T)> res = encodeDelta((uint_t<sizeof(T)>)rawint^0x80000000, (uint_t<sizeof(T)>)predint^0x80000000, bits/*sizeof(T)<<3*/, std::false_type());
-// 	int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
+// 	std::cout << bits << std::endl;
+	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
+	transform::int_t<sizeof(T)> rawint = transform::float2int(raw);
+	transform::int_t<sizeof(T)> res = encodeDelta((transform::uint_t<sizeof(T)>)rawint^0x80000000, (transform::uint_t<sizeof(T)>)predint^0x80000000, bits/*sizeof(T)<<3*/, std::false_type());
+// 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
 	return *((T*)&res);
 }
 template <class T>
-T encodeDelta(const T raw, const T pred, const int bits)
+T encodeDelta(const T raw, const T pred, const int q)
 {
-	return encodeDelta(raw, pred, bits, std::is_floating_point<T>());
+	return encodeDelta(raw, pred, quant2bits<T>(q), std::is_floating_point<T>());
 }
  
 // template <class T>
@@ -181,9 +192,9 @@ T predict(const T v0, const T v1, const T v2, const int bits, std::true_type)
 	return v0 + (v1-v2);
 }
 template <class T>
-T predict(const T v0, const T v1, const T v2, const int bits)
+T predict(const T v0, const T v1, const T v2, const int q)
 {
-	return predict(v0, v1, v2, bits, std::is_floating_point<T>());
+	return predict(v0, v1, v2, quant2bits<T>(q), std::is_floating_point<T>());
 }
  
 // template <class T>
@@ -233,10 +244,10 @@ T predict(const T v0, const T v1, const T v2, const int bits)
 // template <class T> T encode(const T raw, const T v0, const T v1, const T v2, const int bits, std::true_type) {
 // // 	T pred = v0 + v1 - v2;
 // 	T pred = v0 + (v1-v2);
-// 	int_t<sizeof(T)> predint = float2int(pred);
-// 	int_t<sizeof(T)> rawint = float2int(raw);
-// 	int_t<sizeof(T)> res = encodeDelta((uint_t<sizeof(T)>)rawint, (uint_t<sizeof(T)>)predint, bits);
-// // 	int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
+// 	transform::int_t<sizeof(T)> predint = float2int(pred);
+// 	transform::int_t<sizeof(T)> rawint = float2int(raw);
+// 	transform::int_t<sizeof(T)> res = encodeDelta((transform::uint_t<sizeof(T)>)rawint, (transform::uint_t<sizeof(T)>)predint, bits);
+// // 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
 // 	return *((T*)&res);
 // 	
 // }
@@ -256,11 +267,11 @@ T predict(const T v0, const T v1, const T v2, const int bits)
 // template <class T> T decode(const T delta, const T v0, const T v1, const T v2, const int bits, std::true_type) {
 // 	// 	T pred = v0 + v1 - v2;
 // 	T pred = v0 + (v1-v2);
-// 	int_t<sizeof(T)> predint = float2int(pred);
-// 	uint_t<sizeof(T)> deltaint = *((uint_t<sizeof(T)>*)&delta);
-// 	int_t<sizeof(T)> res = decodeDelta(deltaint, (uint_t<sizeof(T)>)predint, bits);
-// 	int_t<sizeof(T)> res2 = int2float(res);
-// // 	int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
+// 	transform::int_t<sizeof(T)> predint = float2int(pred);
+// 	transform::uint_t<sizeof(T)> deltaint = *((transform::uint_t<sizeof(T)>*)&delta);
+// 	transform::int_t<sizeof(T)> res = decodeDelta(deltaint, (transform::uint_t<sizeof(T)>)predint, bits);
+// 	transform::int_t<sizeof(T)> res2 = int2float(res);
+// // 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
 // 	return *((T*)&res2);
 // 	
 // }

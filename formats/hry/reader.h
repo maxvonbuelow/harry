@@ -108,47 +108,13 @@ struct HeaderReader {
 			builder.alloc_attr(builder.add_list(fmt, interps, targets[i]), s);
 		}
 
-// 		mesh::smalloff_t sizes[3] = { 0 };
-// 		for (int i = 0; i < 3; ++i) {
-// 			uint32_t s;
-// 			is.read((char*)&s, sizeof(uint32_t));
-// 			std::vector<mesh::smalloff_t> *vec = &attrs.off_face + i;
-// 			vec->resize(s);
-// 			is.read((char*)vec->data(), vec->size() * sizeof(mesh::smalloff_t));
-// 			for (int j = 0; j < vec->size() - 1; ++j) {
-// 				(&attrs.size_face)[i] = std::max((&attrs.size_face)[i], (mesh::smalloff_t)((*vec)[j + 1] - (*vec)[j]));
-// 			}
-// 			sizes[i] = vec->back();
-// 		}
-// 
-// 		mesh::ref_t max_as = 0;
-// 		for (int i = 0; i < 3; ++i) {
-// 			std::vector<mesh::ref_t> *vec = &attrs.refs_binding_face + i;
-// 			vec->resize(sizes[i]);
-// 			is.read((char*)vec->data(), vec->size() * sizeof(mesh::ref_t));
-// 			if (!vec->empty()) max_as = std::max(max_as, *std::max_element(vec->begin(), vec->end()));
-// 		}
-// 
-// 		mesh::ref_t num_as = max_as + 1;
-// 		attrs.resize(num_as);
-// 		for (mesh::ref_t i = 0; i < num_as; ++i) {
-// 			uint32_t s;
-// 			is.read((char*)&s, sizeof(uint32_t));
-// 			MixingFmt fmt(is);
-// 			MixingInterp interp(is);
-// 			attrs[i].init(fmt, fmt.get_dequantized(), interp);
-// 			attrs[i].resize(s);
-// 			is.read((char*)attrs[i].min().data(), attrs[i].min().size());
-// 			is.read((char*)attrs[i].max().data(), attrs[i].max().size());
-// 		}
-
 		// read tri types
-		uint32_t count;
-		is.read((char*)&count, sizeof(uint32_t));
+		uint16_t count;
+		is.read((char*)&count, 2);
 		for (uint32_t i = 0; i < count; ++i) {
-			uint32_t ntri;
-			is.read((char*)&ntri, sizeof(uint32_t));
-			builder.mesh.faces.seen_edge(ntri);
+			uint16_t ntri;
+			is.read((char*)&ntri, 2);
+			builder.seen_edge(ntri);
 		}
 	}
 };

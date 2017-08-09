@@ -148,6 +148,10 @@ struct Builder {
 	{
 		builder_conn.set_org(v);
 	}
+	void seen_edge(ledgeidx_t ne)
+	{
+		mesh.faces.seen_edge(ne);
+	}
 };
 
 }

@@ -91,24 +91,21 @@ struct HeaderWriter {
 					os.write((const char*)name.data(), strlen);
 				}
 			}
-			
 
-// 			mesh.attrs[i].fmt.writeto(os);
-// 			mesh.attrs[i].interp.writeto(os);
 // 			os.write((char*)mesh.attrs[i].min().data(), mesh.attrs[i].min().size());
 // 			os.write((char*)mesh.attrs[i].max().data(), mesh.attrs[i].max().size());
 		}
 
 		// write tri types
-		uint32_t count = 0;
-		for (uint32_t i = 0; i < mesh.faces.have_edges.size(); ++i) {
-			if (mesh.faces.have_edges[i]) ++count;
+		uint16_t count = 0;
+		for (mesh::Faces::EdgeIterator it = mesh.faces.edge_begin(); it != mesh.faces.edge_end(); ++it) {
+			++count;
 		}
-		os.write((char*)&count, sizeof(uint32_t));
-		for (uint32_t i = 0; i < mesh.faces.have_edges.size(); ++i) {
-			if (mesh.faces.have_edges[i]) os.write((char*)&i, sizeof(uint32_t));
+		os.write((char*)&count, 2);
+		for (mesh::Faces::EdgeIterator it = mesh.faces.edge_begin(); it != mesh.faces.edge_end(); ++it) {
+			uint16_t e = *it;
+			os.write((char*)&e, 2);
 		}
-		
 	}
 
 };
@@ -133,21 +130,28 @@ void compress_bg(std::ostream &os, M &mesh, D &draw, bool bg = true)
 	else compress<M, D>(os, mesh, draw);
 }
 
+// #define GUI
 
 struct voiddrawer { template <typename ...T> void operator()(T &&...x) {} };
 template <typename H>
 void write(std::ostream &os, H &handle)
 {
-// 	int argc = 0; char **argv;
-// 	QApplication app(argc, argv);
-// 	MainWindow *mainWindow = new MainWindow(handle.num_edge());
-// 	mainWindow->resize(mainWindow->sizeHint());
-// 	mainWindow->show();
+#ifdef GUI
+	AssertMngr::set([] { AssertMngr::keepalive(); });
+	int argc = 0; char **argv;
+	QApplication app(argc, argv);
+	MainWindow *mainWindow = new MainWindow(handle.num_edge());
+	mainWindow->resize(mainWindow->sizeHint());
+	mainWindow->show();
 
-// 	drawer draw(((Window*)mainWindow->centralWidget())->glWidget, handle);
+	drawer draw(((Window*)mainWindow->centralWidget())->glWidget, handle);
+	compress_bg(os, handle, draw, true);
+	app.exec();
+#else
+	AssertMngr::set([] { std::exit(1); });
 	voiddrawer draw;
 	compress_bg(os, handle, draw, false);
-// 	app.exec();
+#endif
 
 
 }

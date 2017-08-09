@@ -87,6 +87,25 @@ public:
 		if (q <= 64) return ULONG;
 		return NONE;
 	}
+
+	Fmt big() const
+	{
+		Fmt fmt;
+		for (int i = 0; i < size(); ++i) {
+			switch (stype(i)) {
+			case FLOAT:
+			case DOUBLE:
+				fmt.add(DOUBLE);
+				break;
+			case ULONG:
+				fmt.add(ULONG);
+				break;
+			default:
+				fmt.add(LONG);
+			}
+		}
+		return fmt;
+	}
 };
 
 struct Interps {
@@ -221,7 +240,7 @@ struct View {
 	void set(T &&op, Args ...args)
 	{
 		for (int i = 0; i < fmt.size(); ++i) {
-			switch (fmt.type(i)) {
+			switch (fmt.stype(i)) {
 			case FLOAT:  at<float>(i)    = op.template operator()<float>   (args.template at<float>   (i)...); break;
 			case DOUBLE: at<double>(i)   = op.template operator()<double>  (args.template at<double>  (i)...); break;
 			case ULONG:  at<uint64_t>(i) = op.template operator()<uint64_t>(args.template at<uint64_t>(i)...); break;
@@ -237,10 +256,30 @@ struct View {
 	}
 
 	template <typename T, typename ...Args>
+	void setq(T &&op, Args ...args)
+	{
+		for (int i = 0; i < fmt.size(); ++i) {
+			int q = fmt.quant(i);
+			switch (fmt.stype(i)) {
+			case FLOAT:  at<float>(i)    = op.template operator()<float>   (q, args.template at<float>   (i)...); break;
+			case DOUBLE: at<double>(i)   = op.template operator()<double>  (q, args.template at<double>  (i)...); break;
+			case ULONG:  at<uint64_t>(i) = op.template operator()<uint64_t>(q, args.template at<uint64_t>(i)...); break;
+			case LONG:   at<int64_t>(i)  = op.template operator()<int64_t> (q, args.template at<int64_t> (i)...); break;
+			case UINT:   at<uint32_t>(i) = op.template operator()<uint32_t>(q, args.template at<uint32_t>(i)...); break;
+			case INT:    at<int32_t>(i)  = op.template operator()<int32_t> (q, args.template at<int32_t> (i)...); break;
+			case USHORT: at<uint16_t>(i) = op.template operator()<uint16_t>(q, args.template at<uint16_t>(i)...); break;
+			case SHORT:  at<int16_t>(i)  = op.template operator()<int16_t> (q, args.template at<int16_t> (i)...); break;
+			case UCHAR:  at<uint8_t>(i)  = op.template operator()<uint8_t> (q, args.template at<uint8_t> (i)...); break;
+			case CHAR:   at<int8_t>(i)   = op.template operator()<int8_t>  (q, args.template at<int8_t>  (i)...); break;
+			}
+		}
+	}
+
+	template <typename T, typename ...Args>
 	void sets(T &&op, Args ...args)
 	{
 		for (int i = 0; i < fmt.size(); ++i) {
-			switch (fmt.type(i)) {
+			switch (fmt.stype(i)) {
 			case FLOAT:  at<float>(i)    = op.template operator()<float>   (args.template get<float>   (i)...); break;
 			case DOUBLE: at<double>(i)   = op.template operator()<double>  (args.template get<double>  (i)...); break;
 			case ULONG:  at<uint64_t>(i) = op.template operator()<uint64_t>(args.template get<uint64_t>(i)...); break;
@@ -251,6 +290,26 @@ struct View {
 			case SHORT:  at<int16_t>(i)  = op.template operator()<int16_t> (args.template get<int16_t> (i)...); break;
 			case UCHAR:  at<uint8_t>(i)  = op.template operator()<uint8_t> (args.template get<uint8_t> (i)...); break;
 			case CHAR:   at<int8_t>(i)   = op.template operator()<int8_t>  (args.template get<int8_t>  (i)...); break;
+			}
+		}
+	}
+
+	template <typename T, typename ...Args>
+	void setst(T &&op, Args ...args)
+	{
+		for (int i = 0; i < fmt.size(); ++i) {
+			Type t = fmt.stype(i);
+			switch (t) {
+			case FLOAT:  at<float>(i)    = op.template operator()<float>   (t, args.template get<float>   (i)...); break;
+			case DOUBLE: at<double>(i)   = op.template operator()<double>  (t, args.template get<double>  (i)...); break;
+			case ULONG:  at<uint64_t>(i) = op.template operator()<uint64_t>(t, args.template get<uint64_t>(i)...); break;
+			case LONG:   at<int64_t>(i)  = op.template operator()<int64_t> (t, args.template get<int64_t> (i)...); break;
+			case UINT:   at<uint32_t>(i) = op.template operator()<uint32_t>(t, args.template get<uint32_t>(i)...); break;
+			case INT:    at<int32_t>(i)  = op.template operator()<int32_t> (t, args.template get<int32_t> (i)...); break;
+			case USHORT: at<uint16_t>(i) = op.template operator()<uint16_t>(t, args.template get<uint16_t>(i)...); break;
+			case SHORT:  at<int16_t>(i)  = op.template operator()<int16_t> (t, args.template get<int16_t> (i)...); break;
+			case UCHAR:  at<uint8_t>(i)  = op.template operator()<uint8_t> (t, args.template get<uint8_t> (i)...); break;
+			case CHAR:   at<int8_t>(i)   = op.template operator()<int8_t>  (t, args.template get<int8_t>  (i)...); break;
 			}
 		}
 	}
