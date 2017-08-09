@@ -225,7 +225,7 @@ BWD:
 		vtx_is_encoded[v] = true;
 		int num_paral = curparal;
 // 		if (num_paral != 1)
-		std::cout << "Num paral: " << num_paral << std::endl;
+// 		std::cout << "Num paral: " << num_paral << std::endl;
 // 		if (num_paral > 1) std::exit(1);
 // 		if (num_paral > 1)assert(false);
 
@@ -425,8 +425,8 @@ struct AttrCoder : AbsAttrCoder {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
 
 			mixing::View res = mesh.attrs[l].accu()[0];
-			std::cout << "org: "; mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)].print(std::cout); std::cout << std::endl;
-			std::cout << "pred: "; res.print(std::cout); std::cout << std::endl;
+// 			std::cout << "org: "; mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)].print(std::cout); std::cout << std::endl;
+// 			std::cout << "pred: "; res.print(std::cout); std::cout << std::endl;
 			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
 			wr.attr_data(res, l);
 
