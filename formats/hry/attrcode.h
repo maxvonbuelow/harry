@@ -224,20 +224,21 @@ struct AttrCoder : AbsAttrCoder {
 
 	void vtx(mesh::faceidx_t f, mesh::ledgeidx_t le)
 	{
-// 		mesh::conn::fepair e(f, le);
-// 		mesh::vtxidx_t v = mesh.conn.org(e);
-// 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
-// 
-// 		AbsAttrCoder::vtx(f, le);
-// 		wr.reg_vtx(r);
-// 
-// 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
-// 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
-// 
-// 			mixing::View res = mesh.attrs[l].accu()[0];
-// 			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
-// 			wr.attr_data(res, l);
-// 		}
+		mesh::conn::fepair e(f, le);
+		mesh::vtxidx_t v = mesh.conn.org(e);
+		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
+
+		AbsAttrCoder::vtx(f, le);
+		wr.reg_vtx(r);
+		std::cout << "REGION: " << r << " " << mesh.attrs.num_bindings_vtx_reg(r) << std::endl;
+
+		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
+			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
+
+			mixing::View res = mesh.attrs[l].accu()[0];
+			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
+			wr.attr_data(res, l);
+		}
 	}
 
 // 	void face(faceidx_t f)
@@ -338,21 +339,22 @@ struct AttrDecoder : AbsAttrCoder {
 
 	void vtx(mesh::faceidx_t f, mesh::ledgeidx_t le)
 	{
-// 		mesh::conn::fepair e(f, le);
-// 		order.push_back(e);
-// 		mesh::vtxidx_t v = builder.mesh.conn.org(e);
-// 
-// 		// save delta to store
-// 		mesh::regidx_t r = rd.reg_vtx();
-// 		builder.vtx_reg(v, r);
-// 		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
-// 			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
-// 
-// 			mesh::attridx_t attridx = cur_idx[l]++;
-// 			rd.attr_data(builder.mesh.attrs[l][attridx], l);
-// 
-// 			builder.bind_vtx_attr(v, a, attridx);
-// 		}
+		mesh::conn::fepair e(f, le);
+		order.push_back(e);
+		mesh::vtxidx_t v = builder.mesh.conn.org(e);
+
+		// save delta to store
+		mesh::regidx_t r = rd.reg_vtx();
+		builder.vtx_reg(v, r);
+		std::cout << "REGION: " << r << " " << mesh.attrs.num_bindings_vtx_reg(r) << std::endl;
+		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
+			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
+
+			mesh::attridx_t attridx = cur_idx[l]++;
+			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+
+			builder.bind_vtx_attr(v, a, attridx);
+		}
 	}
 
 	void vtx_post(mesh::faceidx_t f, mesh::ledgeidx_t le)

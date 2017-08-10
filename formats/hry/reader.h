@@ -91,10 +91,12 @@ struct HeaderReader {
 
 				uint16_t ninterps;
 				is.read((char*)&ninterps, 2);
+				int off = 0;
 				for (int j = 0; j < ninterps; ++j) {
 					uint16_t len;
 					is.read((char*)&len, 2);
-					interps.appendn(j, len);
+					interps.appendn(j, len, off);
+					off += len;
 					if (interps.have_name(j)) {
 						uint32_t strlen;
 						is.read((char*)&strlen, 4);

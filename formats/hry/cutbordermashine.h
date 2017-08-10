@@ -107,6 +107,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 	int curtri, ntri;
 	mesh::conn::fepair curedge, startedge, lastfaceedge;
 	mesh::conn::fepair e0, e1, e2;
+	std::ofstream osss("order.dbg");
 	do {
 		Data v0, v1, v2, v2op;
 		curtri = 0;
@@ -115,6 +116,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 		bool m0 = perm.isMapped(v0.idx), m1 = perm.isMapped(v1.idx), m2 = perm.isMapped(v2.idx);
 		f = mesh.conn.face(e0);
 		ntri = mesh.conn.num_edges(f) - 2;
+		assert_eq(ntri, 1);
 		CutBorderBase::INITOP initop;
 		// Tri 3
 		if (m0 && m1 && m2) {
@@ -250,6 +252,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, P &prog)
 			}
 
 			int endvtx_order = order[v1.idx];
+			osss << endvtx_order << std::endl;
 			wr.order(endvtx_order);
 
 			if (!inner && e0 == INVALID_PAIR) {
@@ -377,6 +380,7 @@ std::ostream &operator<<(std::ostream &os, const DecoderData &v)
 template <typename H, typename R, typename P>
 CBMStats decode(H &builder, R &rd, P &prog)
 {
+	std::ifstream isss("order.dbg");
 	attrcode::AttrDecoder<R> ac(builder, rd);
 
 	typedef DataTpl<DecoderData> Data;
@@ -385,7 +389,7 @@ CBMStats decode(H &builder, R &rd, P &prog)
 	int nm = 0;
 
 	CutBorder<DecoderData> cutBorder(100 + 2000, 10 * sqrt(builder.num_vtx()) + 10000000);
-	std::vector<int> order(builder.num_vtx());
+	std::vector<int> order(builder.num_vtx(), 0);
 
 	int vertexIdx = 0;
 	mesh::faceidx_t f = 0;
@@ -409,39 +413,53 @@ CBMStats decode(H &builder, R &rd, P &prog)
 			break;
 		case CutBorderBase::TRI100:
 			v0.idx = rd.vertid(); v1.idx = vertexIdx++; v2.idx = vertexIdx++;
-			goto TRI1;
+			ntri = rd.numtri();
+			break;
+// 			goto TRI1;
 		case CutBorderBase::TRI010:
 			v0.idx = vertexIdx++; v1.idx = rd.vertid(); v2.idx = vertexIdx++;
-// 			ntri = rd.numtri();
-			goto TRI1;
+			ntri = rd.numtri();
+			break;
+// // 			ntri = rd.numtri();
+// 			goto TRI1;
 		case CutBorderBase::TRI001:
 			v0.idx = vertexIdx++; v1.idx = vertexIdx++; v2.idx = rd.vertid();
-		TRI1:
 			ntri = rd.numtri();
-// 			ac.face(f, ne);
-// 			ac.vtx(/*v1.idx*/f,1); ac.vtx(/*v2.idx*/f,2);
-			++nm;
 			break;
+// 		TRI1:
+// 			ntri = rd.numtri();
+// // 			ac.face(f, ne);
+// // 			ac.vtx(/*v1.idx*/f,1); ac.vtx(/*v2.idx*/f,2);
+// 			++nm;
+// 			break;
 		case CutBorderBase::TRI110:
 			v0.idx = rd.vertid(); v1.idx = rd.vertid(); v2.idx = vertexIdx++;
-			goto TRI2;
+// 			goto TRI2;
+			ntri = rd.numtri();
+			break;
 		case CutBorderBase::TRI101:
 			v0.idx = rd.vertid(); v1.idx = vertexIdx++; v2.idx = rd.vertid();
-			goto TRI2;
+// 			goto TRI2;
+			ntri = rd.numtri();
+			break;
 		case CutBorderBase::TRI011:
 			v0.idx = vertexIdx++; v1.idx = rd.vertid(); v2.idx = rd.vertid();
-		TRI2:
 			ntri = rd.numtri();
-// 			ac.face(f, ne);
-// 			ac.vtx(/*v2.idx*/f,2);
-			nm += 2;
 			break;
+// 		TRI2:
+// 			ntri = rd.numtri();
+// // 			ac.face(f, ne);
+// // 			ac.vtx(/*v2.idx*/f,2);
+// 			nm += 2;
+// 			break;
 		case CutBorderBase::TRI111:
 			v0.idx = rd.vertid(); v1.idx = rd.vertid(); v2.idx = rd.vertid();
-			ntri = rd.numtri();
-			std::cout << ntri << std::endl;
+// 			ntri = rd.numtri();
+// 			std::cout << ntri << std::endl;
 // 			ac.face(f, ne);
-			nm += 3;
+// 			nm += 3;
+// 			break;
+			ntri = rd.numtri();
 			break;
 		}
 		std::cout << "sf1? " << v0.idx << " " << v1.idx << " " << v2.idx << std::endl;
@@ -453,6 +471,11 @@ CBMStats decode(H &builder, R &rd, P &prog)
 // 		handle.face(v0.idx, v1.idx, v2.idx, CutBorderBase::NM); // no init
 		builder.face_begin(ntri + 2); builder.set_org(v0.idx); builder.set_org(v1.idx); builder.set_org(v2.idx);
 		std::cout << "sf1.2?" << std::endl;
+
+		++curtri;
+		if (curtri == ntri) {
+			builder.face_end();
+		}
 
 		switch (initop) {
 		case CutBorderBase::INIT:
@@ -485,9 +508,7 @@ CBMStats decode(H &builder, R &rd, P &prog)
 		v0.f = f; v1.f = f; v2.f = f;
 		cutBorder.initial(v0, v1, v2);
 
-		++curtri;
 		if (curtri == ntri) {
-			builder.face_end();
 			++f;
 // 			assert_eq(builder.num_face(), f);
 		}
@@ -500,6 +521,11 @@ CBMStats decode(H &builder, R &rd, P &prog)
 
 			int endvtx_order = order[v1.idx];
 			rd.order(endvtx_order);
+
+			int ord2; isss >> ord2;
+			if (endvtx_order != ord2) {
+// 				std::cout << "ERROR: order " << endvtx_order << " exp: " << ord2 << std::endl; std::exit(1);
+			}
 
 			CutBorderBase::OP op = rd.op();
 // 			std::cout << "op: " << CutBorderBase::op2str(op) << std::endl;

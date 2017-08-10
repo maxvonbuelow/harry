@@ -135,10 +135,10 @@ struct Interps {
 		if (offs[interp] == -1) offs[interp] = off;
 		++lens[interp];
 	}
-	void appendn(int interp, int n)
+	void appendn(int interp, int n, int off = -1)
 	{
 		for (int i = 0; i < n; ++i) {
-			append(interp);
+			append(interp, off + i);
 		}
 	}
 

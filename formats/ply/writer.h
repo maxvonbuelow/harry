@@ -155,6 +155,7 @@ void write(std::ostream &os, H &handle, bool ascii = false)
 		isset_vtx[as] = true;
 		for (int i = 0; i < interps.size(); ++i) {
 			for (int j = 0; j < interps.len(i); ++j) {
+					std::cout << std::dec << (int)fmt.type(interps.off(i) + j) << " @" << interps.off(i) << std::endl;
 				os << "property " << type2str(fmt.type(interps.off(i) + j)) << " " << interp2name(interps, i, j) << "\n";
 			}
 		}

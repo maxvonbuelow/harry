@@ -15,6 +15,7 @@ struct writer {
 
 	void order(int i)
 	{
+		i=0;
 		models.order(i);
 	}
 
@@ -90,6 +91,7 @@ struct writer {
 	// Attributes
 	void attr_data(mixing::View e, mesh::listidx_t l)
 	{
+		std::cout << l << std::endl;
 // 		++attrc;
 // 		std::cout << attrc << std::endl;
 		models.attr_data[l]->enc(coder, e);
@@ -144,7 +146,7 @@ private:
 	}
 	void numtri(int n)
 	{
-		models.conn_numtri.template encode<uint16_t>(coder, n);
+		if (n != 0) models.conn_numtri.template encode<uint16_t>(coder, n);
 	}
 };
 
@@ -159,6 +161,7 @@ struct reader {
 
 	void order(int i)
 	{
+		i=0;
 		models.order(i);
 	}
 
@@ -175,6 +178,7 @@ struct reader {
 	}
 	CutBorderBase::OP op()
 	{
+		std::cout << "decoding op" << std::endl;
 		auto x = models.conn_op.template decode<CutBorderBase::OP>(coder);
 		std::string id; int y;
 		is >> id >> y;
@@ -214,10 +218,11 @@ struct reader {
 // 	int attrc = 0;
 	void attr_data(mixing::View e, mesh::listidx_t l)
 	{
+// 		std::cout << "THESTORE: " << l << std::endl;
 // 		++attrc;
 // 		std::cout << attrc << std::endl;
-		std::cout << "ast?" << std::endl;
+// 		std::cout << "ast?" << std::endl;
 		models.attr_data[l]->dec(coder, e);
-		std::cout << "ast2?" << std::endl;
+// 		std::cout << "ast2?" << std::endl;
 	}
 };

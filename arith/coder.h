@@ -39,6 +39,9 @@ struct Encoder : Coder<TF> {
 		flush();
 	}
 
+	Encoder(const Encoder&) = delete;
+	Encoder &operator=(const Encoder&) = delete;
+
 	void flush()
 	{
 		if (flushed) return;
@@ -62,7 +65,7 @@ struct Encoder : Coder<TF> {
 			R = R - r * l;
 
 		while (R <= QUARTER) {
-			if (L + R <= HALF) {
+			if (L <= HALF && L + R <= HALF) {
 				bit_plus_follow(0);
 			} else if (L >= HALF) {
 				bit_plus_follow(1);
@@ -114,6 +117,9 @@ struct Decoder : Coder<TF> {
 			D = 2 * D + read_one_bit();
 		}
 	}
+
+	Decoder(const Decoder&) = delete;
+	Decoder &operator=(const Decoder&) = delete;
 
 	TF decode_target(TF t)
 	{

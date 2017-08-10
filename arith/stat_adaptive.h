@@ -24,6 +24,9 @@ struct AdaptiveStatisticsModule {
 	AdaptiveStatisticsModule(TC _n = 256) : F(_n, 0), C(_n, 0), n(_n), mid(msb(_n))
 	{}
 
+	AdaptiveStatisticsModule(const AdaptiveStatisticsModule&) = delete;
+	AdaptiveStatisticsModule &operator=(const AdaptiveStatisticsModule&) = delete;
+
 	void range(TS s, TF &l, TF &h)
 	{
 		h = cumulative(s);
@@ -71,6 +74,7 @@ struct AdaptiveStatisticsModule {
 	}
 	void halve()
 	{
+// 		std::exit(1);
 		for (TS i = 0; i < n; ++i) {
 			inc_impl(i, -(frequency(i) >> 1));
 		}
