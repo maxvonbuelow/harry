@@ -18,6 +18,8 @@ struct writer {
 		models.order(i);
 	}
 
+	std::ofstream os = std::ofstream("dbg.op");
+
 	// Connectivity
 	void initial(int ntri)
 	{
@@ -84,9 +86,12 @@ struct writer {
 		models.conn_regvtx.template encode<uint16_t>(coder, r);
 	}
 
+// 	int attrc = 0;
 	// Attributes
 	void attr_data(mixing::View e, mesh::listidx_t l)
 	{
+// 		++attrc;
+// 		std::cout << attrc << std::endl;
 		models.attr_data[l]->enc(coder, e);
 	}
 
@@ -115,10 +120,12 @@ private:
 
 	void iop(CutBorderBase::INITOP op)
 	{
+		os << "i " << op << std::endl;
 		models.conn_iop.encode(coder, op);
 	}
 	void op(CutBorderBase::OP op)
 	{
+		os << "o " << op << std::endl;
 		models.conn_op.encode(coder, op);
 	}
 
@@ -132,6 +139,7 @@ private:
 	}
 	void vertid(mesh::vtxidx_t v)
 	{
+		std::cout << "Encoding: " << std::hex << v << std::endl;
 		models.conn_vert.template encode<uint32_t>(coder, v);
 	}
 	void numtri(int n)
@@ -144,6 +152,8 @@ struct reader {
 	HryModels &models;
 	arith::Decoder<> &coder;
 
+	std::ifstream is = std::ifstream("dbg.op");
+
 	reader(HryModels &_models, arith::Decoder<> &_coder) : models(_models), coder(_coder)
 	{}
 
@@ -155,27 +165,40 @@ struct reader {
 	// Connectivity
 	CutBorderBase::INITOP iop()
 	{
-		return models.conn_iop.template decode<CutBorderBase::INITOP>(coder);
+		auto x = models.conn_iop.template decode<CutBorderBase::INITOP>(coder);
+		std::string id; int y;
+		is >> id >> y;
+		if (id != "i" || x != y) { std::cout <<std::endl << "ERR@i: " << id << " || " << CutBorderBase::iop2str(x) << " " << CutBorderBase::iop2str((decltype(x))y) << std::endl; std::exit(1); }
+		std::cout << "CURIOP: " << CutBorderBase::iop2str(x) << std::endl;
+// 		if (x == CutBorderBase::TRI111) std::cout << "HERE" << std::endl;
+		return x;
 	}
 	CutBorderBase::OP op()
 	{
-		return models.conn_op.template decode<CutBorderBase::OP>(coder);
+		auto x = models.conn_op.template decode<CutBorderBase::OP>(coder);
+		std::string id; int y;
+		is >> id >> y;
+		if (id != "o" || x != y) { std::cout << "ERR@o: " << id << " " << CutBorderBase::op2str(x) << " " << CutBorderBase::op2str((decltype(x))y) << std::endl; std::exit(1); }
+		std::cout << "CUROP: " << CutBorderBase::op2str(x) << std::endl;
+		return x;
 	}
-	int32_t elem()
+	uint32_t elem()
 	{
-		return transform::zigzag_decode(models.conn_elem.template decode<int32_t>(coder));
+		return transform::zigzag_decode(models.conn_elem.template decode<uint32_t>(coder));
 	}
-	int16_t part()
+	uint16_t part()
 	{
-		return models.conn_part.template decode<int16_t>(coder);
+		return models.conn_part.template decode<uint16_t>(coder);
 	}
 	mesh::vtxidx_t vertid()
 	{
-		return models.conn_vert.template decode<int32_t>(coder);
+		auto x = models.conn_vert.template decode<uint32_t>(coder);
+		std::cout << "Decoding: " << std::hex << x << std::endl;
+		return x;
 	}
-	int16_t numtri()
+	uint16_t numtri()
 	{
-		return models.conn_numtri.template decode<int16_t>(coder);
+		return models.conn_numtri.template decode<uint16_t>(coder);
 	}
 
 	mesh::regidx_t reg_face()
@@ -188,8 +211,13 @@ struct reader {
 	}
 
 	// Attributes
+// 	int attrc = 0;
 	void attr_data(mixing::View e, mesh::listidx_t l)
 	{
+// 		++attrc;
+// 		std::cout << attrc << std::endl;
+		std::cout << "ast?" << std::endl;
 		models.attr_data[l]->dec(coder, e);
+		std::cout << "ast2?" << std::endl;
 	}
 };

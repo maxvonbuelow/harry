@@ -3,9 +3,13 @@
 #include <ostream>
 #include <thread>
 
+// #define GUI
+
+#ifdef GUI
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QSurfaceFormat>
+#endif
 
 #include "cutbordermashine.h"
 #include "io.h"
@@ -121,6 +125,8 @@ void compress(std::ostream &os, M &mesh, D &draw)
 	::writer wr(models, coder);
 	progress::handle prog;
 	encode(mesh, draw, wr, prog);
+// 	std::cout << os.fail() << std::endl;
+	coder.flush();
 }
 
 template <typename M, typename D>
@@ -129,8 +135,6 @@ void compress_bg(std::ostream &os, M &mesh, D &draw, bool bg = true)
 	if (bg) std::thread(compress<M, D>, std::ref(os), std::ref(mesh), std::ref(draw)).detach();
 	else compress<M, D>(os, mesh, draw);
 }
-
-// #define GUI
 
 struct voiddrawer { template <typename ...T> void operator()(T &&...x) {} };
 template <typename H>

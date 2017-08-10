@@ -377,7 +377,7 @@ std::ostream &operator<<(std::ostream &os, const DecoderData &v)
 template <typename H, typename R, typename P>
 CBMStats decode(H &builder, R &rd, P &prog)
 {
-// 	attrcode::AttrDecoder<R> ac(attrs, rd);
+	attrcode::AttrDecoder<R> ac(builder, rd);
 
 	typedef DataTpl<DecoderData> Data;
 	typedef ElementTpl<DecoderData> Element;
@@ -412,7 +412,7 @@ CBMStats decode(H &builder, R &rd, P &prog)
 			goto TRI1;
 		case CutBorderBase::TRI010:
 			v0.idx = vertexIdx++; v1.idx = rd.vertid(); v2.idx = vertexIdx++;
-			ntri = rd.numtri();
+// 			ntri = rd.numtri();
 			goto TRI1;
 		case CutBorderBase::TRI001:
 			v0.idx = vertexIdx++; v1.idx = vertexIdx++; v2.idx = rd.vertid();
@@ -439,34 +439,47 @@ CBMStats decode(H &builder, R &rd, P &prog)
 		case CutBorderBase::TRI111:
 			v0.idx = rd.vertid(); v1.idx = rd.vertid(); v2.idx = rd.vertid();
 			ntri = rd.numtri();
+			std::cout << ntri << std::endl;
 // 			ac.face(f, ne);
 			nm += 3;
 			break;
 		}
+		std::cout << "sf1? " << v0.idx << " " << v1.idx << " " << v2.idx << std::endl;
 		++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
+		std::cout << "sf1.1?" << std::endl;
 
 // 		ac.wedge(f, 0, v0.idx); ac.wedge(f, 1, v1.idx); ac.wedge(f, 2, v2.idx);
 
 // 		handle.face(v0.idx, v1.idx, v2.idx, CutBorderBase::NM); // no init
 		builder.face_begin(ntri + 2); builder.set_org(v0.idx); builder.set_org(v1.idx); builder.set_org(v2.idx);
+		std::cout << "sf1.2?" << std::endl;
 
 		switch (initop) {
 		case CutBorderBase::INIT:
-// 			ac.vtx(/*v0.idx*/f, 0); ac.vtx(/*v1.idx*/f, 1); ac.vtx(/*v2.idx*/f,2);
+			ac.vtx(/*v0.idx*/f, 0); ac.vtx(/*v1.idx*/f, 1); ac.vtx(/*v2.idx*/f,2);
 			break;
 		case CutBorderBase::TRI100:
+			ac.vtx(/*v1.idx*/f,1); ac.vtx(/*v2.idx*/f,2);
+			break;
 		case CutBorderBase::TRI010:
+			ac.vtx(/*v1.idx*/f,0); ac.vtx(/*v2.idx*/f,2);
+			break;
 		case CutBorderBase::TRI001:
-// 			ac.vtx(/*v1.idx*/f,1); ac.vtx(/*v2.idx*/f,2);
+			ac.vtx(/*v1.idx*/f,0); ac.vtx(/*v2.idx*/f,1);
 			break;
 		case CutBorderBase::TRI110:
+			ac.vtx(/*v2.idx*/f,2);
+			break;
 		case CutBorderBase::TRI101:
+			ac.vtx(/*v2.idx*/f,1);
+			break;
 		case CutBorderBase::TRI011:
-// 			ac.vtx(/*v2.idx*/f,2);
+			ac.vtx(/*v2.idx*/f,0);
 			break;
 		case CutBorderBase::TRI111:
 			break;
 		}
+		std::cout << "sf2?" << std::endl;
 
 		v0.vr = v2.idx; v1.vr = v0.idx; v2.vr = v1.idx; // TODO
 		v0.f = f; v1.f = f; v2.f = f;
@@ -478,6 +491,7 @@ CBMStats decode(H &builder, R &rd, P &prog)
 			++f;
 // 			assert_eq(builder.num_face(), f);
 		}
+		std::cout << "sf3?" << std::endl;
 
 		while (!cutBorder.atEnd()) {
 			Element *data_gate = cutBorder.traverseStep(v0, v1);
@@ -537,7 +551,7 @@ CBMStats decode(H &builder, R &rd, P &prog)
 				if (!inner) { ntri = rd.numtri(); curtri = 0; builder.face_begin(ntri + 2); builder.set_org(v1.idx); builder.set_org(v0.idx); builder.set_org(v2.idx); /*ac.face(f, gateface, ne);*/ }
 				else builder.set_org(v2.idx);
 // 				ac.vtx(v2.idx, v0.idx, v1.idx, gatevr);
-// 				ac.vtx(f, curtri + 2);
+				ac.vtx(f, curtri + 2);
 				cutBorder.newVertex(v2, v0.idx, f);
 				cutBorder.init(data_gate, v1.idx, f);
 // 				handle.face(v1.idx, v0.idx, v2.idx, op);
@@ -580,8 +594,11 @@ CBMStats decode(H &builder, R &rd, P &prog)
 
 			prog(vertexIdx);
 		}
+		std::cout << "sf4?" << std::endl;
 	} while (1);
 	prog.end();
+
+	ac.decode();
 
 	return CBMStats{ cutBorder.max_parts, cutBorder.max_elements, nm };
 }

@@ -64,6 +64,20 @@ T mask(int bits)
 //               return T(dlt << 1);
 //        }
 // }
+
+
+static const uint64_t masks[] = { 0x80ull, 0x8000ull, 0, 0x80000000ull, 0, 0, 0, 0x8000000000000000ull };
+
+template <typename T>
+transform::uint_t<sizeof(T)> int2uint(transform::int_t<sizeof(T)> val)
+{
+	return ((transform::uint_t<sizeof(T)>)val) ^ masks[sizeof(T)];
+}
+template <typename T>
+transform::int_t<sizeof(T)> uint2int(transform::uint_t<sizeof(T)> val)
+{
+	return ((transform::int_t<sizeof(T)>)val) ^ masks[sizeof(T)];
+}
  
 template <class T>
 T decodeDelta(const T delta, const T pred, const int bits, std::false_type)
@@ -74,6 +88,7 @@ T decodeDelta(const T delta, const T pred, const int bits, std::false_type)
        if (pred == T(0)) return delta;
  
        const T balanced_max = std::min(T(pred - T(1)), max_pos);
+// 	  std::cout << "bm: " << balanced_max << std::endl;
        if ((delta >> 1) > balanced_max)
        {
               if (max_pos >= pred)
@@ -91,8 +106,9 @@ template <class T>
 T decodeDelta(const T delta, const T pred, const int bits, std::true_type)
 {
 	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
-	transform::int_t<sizeof(T)> deltaint = *((transform::int_t<sizeof(T)>*)&delta);
-	transform::int_t<sizeof(T)> res = decodeDelta((transform::uint_t<sizeof(T)>)deltaint^0x80000000, (transform::uint_t<sizeof(T)>)predint^0x80000000, bits/*sizeof(T)<<3*/, std::false_type());
+	transform::uint_t<sizeof(T)> deltaint = *((transform::uint_t<sizeof(T)>*)&delta);
+// 	transform::int_t<sizeof(T)> res = predint ^ deltaint;
+	transform::int_t<sizeof(T)> res = uint2int<T>(decodeDelta(/*(transform::uint_t<sizeof(T)>)*/deltaint/*^0x80000000*/, /*(transform::uint_t<sizeof(T)>)*/int2uint<T>(predint)/*^0x80000000*/, bits/*sizeof(T)<<3*/, std::false_type()));
 // 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
 	T res2 = transform::int2float(res);
 	return res2;
@@ -101,6 +117,7 @@ T decodeDelta(const T delta, const T pred, const int bits, std::true_type)
 template <class T>
 T decodeDelta(const T delta, const T pred, const int q)
 {
+// 	return transform::uadd(delta, pred);
 	return decodeDelta(delta, pred, quant2bits<T>(q), std::is_floating_point<T>());
 }
 
@@ -114,7 +131,8 @@ T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
        // this is a corner case where the whole range is positive only
        if (pred == T(0)) return raw;
  
-       const T balanced_max = std::min(T(pred - T(1)), max_pos);
+       const T balanced_max = std::min(T(pred), max_pos);
+// 	  std::cout << "bm: " << balanced_max << std::endl;
        if (raw < pred)
        {
               const T dlt = pred - raw;
@@ -130,19 +148,35 @@ T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
        }
 }
 
+void printfloathex(float x)
+{
+	uint32_t y = *((uint32_t*)&x);
+	std::cout << std::hex << y << std::endl;
+}
+
+
 template <class T>
 T encodeDelta(const T raw, const T pred, const int bits, std::true_type)
 {
 // 	std::cout << bits << std::endl;
 	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
 	transform::int_t<sizeof(T)> rawint = transform::float2int(raw);
-	transform::int_t<sizeof(T)> res = encodeDelta((transform::uint_t<sizeof(T)>)rawint^0x80000000, (transform::uint_t<sizeof(T)>)predint^0x80000000, bits/*sizeof(T)<<3*/, std::false_type());
+// 	transform::int_t<sizeof(T)> res = predint ^ rawint;
+	transform::uint_t<sizeof(T)> res = encodeDelta(/*(transform::uint_t<sizeof(T)>)*/int2uint<T>(rawint)/*^0x80000000*/, /*(transform::uint_t<sizeof(T)>)*/int2uint<T>(predint)/*^0x80000000*/, bits/*sizeof(T)<<3*/, std::false_type());
 // 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
-	return *((T*)&res);
+	T r = *((T*)&res);
+// 	assert_eq(raw,
+
+// 	printfloathex(raw);
+// 	printfloathex(decodeDelta(r, pred, bits));
+	assert_eq(raw, decodeDelta(r, pred, bits));
+	
+	return r;
 }
 template <class T>
 T encodeDelta(const T raw, const T pred, const int q)
 {
+// 	return transform::usub(raw, pred);
 	return encodeDelta(raw, pred, quant2bits<T>(q), std::is_floating_point<T>());
 }
  

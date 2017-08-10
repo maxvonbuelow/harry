@@ -67,42 +67,31 @@ namespace attrcode {
 // 	}
 // };
 
+// template <typename T>
+// void test()
+// {
+// 	for (T p = std::numeric_limits<T>::min(); p < std::numeric_limits<T>::max(); ++p) {
+// 		for (T i = std::numeric_limits<T>::min(); i < std::numeric_limits<T>::max(); ++i) {
+// 			T delta = pred::encodeDelta(i, p, sizeof(T) << 3);
+// 			T d = pred::decodeDelta(delta, p, sizeof(T) << 3);
+// 			if (i != d) {
+// 				std::cout << "pred: " << p << " raw: " << i << " decoded: " << d << " delta: " << delta << std::endl;
+// 				std::exit(1);
+// 			}
+// 		}
+// 	}
+// }
+
 struct AbsAttrCoder {
 	std::vector<bool> vtx_is_encoded;
 	int curparal;
 	mesh::Mesh &mesh;
 
 	AbsAttrCoder(mesh::Mesh &_mesh) : mesh(_mesh), vtx_is_encoded(/*_mesh.size_vtx()*/_mesh.attrs.num_vtx(), false)
-	{}
+	{
+// 		test<uint16_t>();
+	}
 
-// 	bool calculate_parallelogram(conn::fepair e0, conn::fepair e1, conn::fepair eo, mesh::regidx_t r)
-// 	{
-// 		mesh::vtxidx_t v0 = mesh.org(e0), v1 = mesh.org(e1), vo = mesh.org(eo);
-// 		if (!vtx_is_encoded[v0] || !vtx_is_encoded[v1] || !vtx_is_encoded[vo]) return false;
-// 		regidx_t r0 = mesh.attrs.vtx2reg(v0), r1 = mesh.attrs.vtx2reg(v1), ro = mesh.attrs.vtx2reg(vo);
-// 		if (r0 != r || r1 != r || ro != r) return false;
-// 
-// // 		parals.push_back(Paral{ v0, v1, vo });
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_vtx(r); ++a) {
-// 			ref_t as = mesh.attrs.binding_vtx(r, a);
-// 
-// 			// fetch values
-// 			MElm d0 = mesh.attrs[as][mesh.attrs.attr_vtx(v0, a)], d1 = mesh.attrs[as][mesh.attrs.attr_vtx(v1, a)], dop = mesh.attrs[as][mesh.attrs.attr_vtx(vo, a)];
-// 
-// 			// increment cache
-// 			if (mesh.attrs[as].sizesp() - 1 <= curparal) mesh.attrs[as].resizesp(curparal + 2);
-// 
-// 			mesh.attrs[as].special(curparal + 1).setq([] (int q, const auto d0c, const auto d1c, const auto doc) { /*assert_eq(q,32);*/return pred::predict(d0c, d1c, doc, q); }, d0, d1, dop);
-// 			mesh.attrs[as].big().set([] (const auto cur, const auto val) { /*std::cout << sizeof(val) << std::endl;*/ return cur + val; }, mesh.attrs[as].big(), mesh.attrs[as].special(curparal + 1));
-// 		}
-// 		++curparal;
-// // return false;
-// 
-// // if (curparal == 0) {
-// // 	++curparal;
-// 		return true;
-// // } return false;
-// 	}
 	void use_paral(mesh::vtxidx_t v0, mesh::vtxidx_t v1, mesh::vtxidx_t vo, mesh::regidx_t r)
 	{
 		if (!vtx_is_encoded[v0] || !vtx_is_encoded[v1] || !vtx_is_encoded[vo]) return;
@@ -122,50 +111,8 @@ struct AbsAttrCoder {
 		++curparal;
 	}
 
-// 	template <bool SAME>
-// 	int calculate_parallelograms(conn::fepair e, mesh::regidx_t r)
-// 	{
-// 		int used = 0;
-// 		if (mesh.num_edges(e.f()) == 3) {
-// 			if (!SAME) {
-// 				conn::fepair e0 = e, e1 = mesh.enext(e0), eo = mesh.enext(e1);
-// 				used += calculate_parallelogram(e0, e1, eo, r) ? 1 : 0;
-// 				return used;
-// 			}
-// 			conn::fepair beg = mesh.enext(e);
-// // 			e = mesh.sym(mesh.fnext(beg)); // TODO
-// 			e = mesh.neigh(beg);
-// 			int cnt = 0;
-// // 			while (e != beg) {
-// 			if (e != mesh.sym(beg)) {
-// 				used += calculate_parallelograms<false>(e, r);
-// // 				e = mesh.sym(mesh.fnext(e));
-// 			}
-// // 				++cnt;
-// // 			}
-// // 			assert_le(cnt, 1);
-// 			return used;
-// 		}
-// 
-// 		conn::fepair e0 = mesh.enext(e);
-// 		conn::fepair e1 = mesh.sym(e);
-// 		if (SAME) e1 = mesh.enext(e1);
-// 
-// 		conn::fepair eol = mesh.enext(e0);
-// 		conn::fepair eor = mesh.enext(e1);
-// 
-// 		e1 = mesh.sym(e1);
-// 		eor = mesh.sym(eor);
-// 
-// 		used += calculate_parallelogram(e0, e1, eol, r) ? 1 : 0;
-// 		used += calculate_parallelogram(e0, e1, eor, r) ? 1 : 0;
-// 
-// 		return used;
-// 	}
-
 	void paral(mesh::conn::fepair ein, mesh::regidx_t r)
 	{
-// 		std::cout << "FOUND PARAL" << std::endl;
 		mesh::conn::fepair e = ein, e0, e1, t;
 		if (mesh.conn.num_edges(e.f()) == 3) {
 			e = mesh.conn.enext(e);
@@ -175,29 +122,27 @@ struct AbsAttrCoder {
 			use_paral(mesh.conn.org(t), mesh.conn.dest(t), mesh.conn.org(e), r);
 			return;
 		}
-// 		std::exit(1);
 		e0 = mesh.conn.enext(e);
 		e1 = mesh.conn.eprev(e);
 		use_paral(mesh.conn.org(e0), mesh.conn.org(e1), mesh.conn.dest(e0), r);
 		if (mesh.conn.num_edges(e.f()) > 4) // when polygon is a pentagon or more, we have two parallelograms
 			use_paral(mesh.conn.org(e0), mesh.conn.org(e1), mesh.conn.org(mesh.conn.eprev(e)), r);
 	}
-	void tfan(mesh::conn::fepair ein, mesh::regidx_t r, mesh::vtxidx_t debug)
+	void tfan(mesh::conn::fepair ein, mesh::regidx_t r/*, mesh::vtxidx_t debug*/)
 	{
-// 		std::cout << "starting TFAN" << std::endl;
 		mesh::conn::fepair e = ein, t;
 		do {
+// 			std::cout << "swag " << e << " " << ein << std::endl;
 			paral(e, r);
 			t = mesh.conn.twin(e);
 			if (t == e) goto BWD;
 			e = mesh.conn.enext(t);
-			assert_eq(debug, mesh.conn.org(e));
+// 			assert_eq(debug, mesh.conn.org(e));
 		} while (e != ein);
 		return;
 
 BWD:
-// 		std::cout << "BACKWARD" << std::endl;
-// 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+// 		std::cout << "bwd" << std::endl;
 		t = mesh.conn.twin(mesh.conn.eprev(ein));
 		if (e == t) return;
 		e = t;
@@ -210,7 +155,7 @@ BWD:
 		} while (e != ein);
 	}
 
-	uint64_t pars = 0;
+	int parals = 0;
 	void vtx(mesh::faceidx_t ff, mesh::ledgeidx_t ee)
 	{
 		// TODO: ULONG and LONG must handled seperately: div first add then
@@ -218,16 +163,12 @@ BWD:
 		mesh::vtxidx_t v = mesh.conn.org(e);
 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
 
-// 		if (mesh.conn.twin(mesh.conn.twin(e)) != e) std::exit(1);
-
 		curparal = 0;
-		tfan(e, r, v);
+// 		std::cout << "sf1?" << std::endl;
+		tfan(e, r/*, v*/);
+// 		std::cout << "sf2?" << std::endl;
 		vtx_is_encoded[v] = true;
 		int num_paral = curparal;
-// 		if (num_paral != 1)
-// 		std::cout << "Num paral: " << num_paral << std::endl;
-// 		if (num_paral > 1) std::exit(1);
-// 		if (num_paral > 1)assert(false);
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
@@ -248,135 +189,18 @@ BWD:
 				res.set([] (const auto x) { return std::numeric_limits<decltype(x)>::max(); }, res);
 				for (int i = 0; i < num_paral; ++i) {
 					res.setst([] (mixing::Type t, const auto resv, const auto predv, const auto avgv) {
-						if (t != mixing::DOUBLE && t != mixing::FLOAT) { return avgv; }
+						if (t != mixing::DOUBLE && t != mixing::FLOAT) return avgv;
 
 						decltype(resv) resdiff = avgv > resv ? avgv - resv : resv - avgv;
 						decltype(predv) preddiff = avgv > predv ? avgv - predv : predv - avgv;
 						return resdiff < preddiff ? resv : predv;
 					}, res, mesh.attrs[l].cache()[i], avg);
 				}
-// 				res.set([] (const auto x) { return x; }, mesh.attrs[l].cache()[0]);
 			}
 		}
-
-		
-
-// 		std::stack<conn::fepair> fan;
-// 		std::unordered_set<conn::fepair, conn::fepair::hash> seen;
-// 		fan.push(e);
-// // 		int s = 0;
-// 		int used = 0;
-// 		curparal = 0;
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_vtx(r); ++a) {
-// 			MElm ee = mesh.attrs[mesh.attrs.binding_vtx(r, a)].big();
-// 			ee.set([] (const auto) { return 0; }, ee);
-// 		}
-// 		while (!fan.empty()) {
-// 			conn::fepair cur = fan.top(), beg = cur; fan.pop();
-// 			seen.insert(cur);
-// 
-// 			// "cur" contains the edge originating from v used to compute the parallelograms.
-// 			used += calculate_parallelograms<true>(cur, r);
-// // 			if(used)break;
-// // 			std::cout << mesh.org(cur) << " " << used << std::endl;
-// // 			++s;
-// 
-// 			// iterate over all non-manifolds
-// 			cur = mesh.neigh(cur);
-// 			if (cur != mesh.sym(beg)) {
-// // 			do {
-// // 				cur = mesh.sym(mesh.fnext(cur));
-// 				conn::fepair next = mesh.enext(cur);
-// 				if (mesh.org(next) != v) continue; // TODO: should we account flipped triangles?
-// 				if (seen.find(next) == seen.end()) fan.push(next);
-// // 			} while (cur != beg);
-// 			}
-// 		}
-// // 		std::cout << "SWAG " << used << std::endl;
-// // 		std::cerr << "v1.1" << std::endl;
-// 		vtx_is_encoded[v] = true;
-// // 		std::cerr << "v1.2" << std::endl;
-// 		assert_eq(curparal, used);
-// // 		for (offset_t a = 0; a < mesh.attrs.num_attr_vtx(r); ++a) {
-// // 			ref_t as = mesh.attrs.binding_vtx(r, a);
-// // 			MElm ee = mesh.attrs[as].special(0);
-// // 			ee.set([used] (auto cur) { return used == 0 ? decltype(cur)(0) : divround<decltype(cur)>(cur, used); }, ee);
-// // // 			wr.vtxparal(ee, as);
-// // 		}
-// // 		wr.reg_vtx(r);
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_vtx(r); ++a) {
-// 			ref_t as = mesh.attrs.binding_vtx(r, a);
-// 			MElm avg = mesh.attrs[as].big();
-// 			avg.set([used] (const auto cur) { return used == 0 ? decltype(cur)(0) : divround(cur, (decltype(cur))used); }, avg);
-// 			bool useavg = false; // use average when at least one type is quantized
-// 			for (int i = 0; i < mesh.attrs[as].fmt.type.size(); ++i) {
-// // 				useavg |= mesh.attrs[as].fmt.isquant(i);
-// 				useavg |= mesh.attrs[as].fmt.type[i] != MixingFmt::FLOAT && mesh.attrs[as].fmt.type[i] != MixingFmt::DOUBLE;
-// 			}
-// 			if (useavg) curparal = 0;
-// 
-// 			double minsumdiff = std::numeric_limits<double>::infinity();
-// 			int minparal = -1;
-// 			std::vector<int> best(100, -1); // TODO
-// 			MElm bestval = mesh.attrs[as].special(0);
-// 			bestval.set([] (const auto x) { return std::numeric_limits<decltype(x)>::max(); }, bestval);
-// 			for (int i = 0; i < curparal; ++i) {
-// 				MElm cur = mesh.attrs[as].special(i + 1);
-// 
-// 				double sum = 0;
-// 				bestval.setqi([&sum,i,&best] (int idx, int qq, const auto cu, const auto av, const auto bv) {
-// 					decltype(cu) delta = av > cu ? av - cu : cu - av;
-// 					if (delta < bv) {
-// 						best[idx] = i;
-// 						return delta;
-// 					}
-// 					return bv;
-// 
-// // 					if 
-// 
-// // 					decltype(cu) d = pred::encodeDelta(av, cu, qq);
-// // 					uint_t<sizeof(cu)> inc = (uint_t<sizeof(cu)>)*((int_t<sizeof(cu)>*)&d);
-// // 					if (sum + inc > sum) sum += inc/*(cu > av ? cu - av : av - cu)*/;
-// // 					else sum = std::numeric_limits<uint64_t>::max();
-// // 					return cu;
-// 				}, cur, avg, bestval); // TODO: weighting
-// // 				if (sum <= minsumdiff) {
-// // 					minsumdiff = sum;
-// // 					minparal = i;
-// // 				}
-// 			}
-// 			if (curparal != 0) {
-// 				avg.setqi([this,&as,&best] (int idx, int qq, const auto cur) { return mesh.attrs[as].special(best[idx] + 1).get<decltype(cur)>(idx); }, avg);
-// 			} else {
-// 			}
-// // 			assert_eq(minparal == -1, curparal == 0);
-// // 			minparal=0;
-// // 			if (curparal != 0) avg.set([] (auto o) { return o; }, mesh.attrs[as].special(minparal + 1)); // TODO: move this
-// 
-// // 			ref_t as = mesh.attrs.binding_vtx(r, a);
-// // 			MElm ee = curparal != 0 ? mesh.attrs[as].special(minparal + 1) : avg;
-// // 			avg.setq([] (uint8_t q, auto raw, auto cur) { return pred::encodeDelta(raw, cur, q); }, mesh.attrs[as][v], ee);
-// // 			avg.set([] (const auto cur) { return cur; }, ee);
-// // 			wr.vtxabs(ee, as);
-// 
-// // 				wr.vtxparal(avg, as);
-// // 			else
-// // 				wr.vtxparal(mesh.attrs[as].special(minparal + 1), as);
-// 		}
-// // 		std::cerr << "v1.3" << std::endl;
-// // 		for (offset_t a = 0; a < mesh.attrs.num_attr_vtx(r); ++a) {
-// // 			ref_t as = mesh.attrs.binding_vtx(r, a);
-// // 			MElm ee = mesh.attrs[as].special(0);
-// // 			ee.setq([] (uint8_t q, auto raw, auto cur) { return pred::encodeDelta(raw, cur, q); }, mesh.attrs[as][v], ee);
-// // 			wr.vtxparal(ee, as);
-// // 		}
-// 
-// 		/////////////////////////////AUTO
-// 		
-		pars += num_paral;
-// // 		cache.print(std::cout); std::cout << std::endl;
-// 		
-// 		std::cout << "par size of " << v << " is " << num_paral << " cur avg: " << (float)pars / mesh.num_vtx() << std::endl;
+		parals += 1;
+// 		if (parals < 30) std::cout << num_paral << std::endl;
+// 		std::cout << "stat: " << (float)parals / mesh.num_vtx() << std::endl;
 	}
 };
 
@@ -398,63 +222,22 @@ struct AttrCoder : AbsAttrCoder {
 // 		}
 	}
 
-// 	void face(mesh::faceidx_t f, mesh::ledgeidx_t le)
-// 	{
-// // 		conn::fepair e(f, le), beg = e;
-// // 
-// // 		// iterate over all vertices of the face
-// // 		do {
-// // 			mesh::vtxidx_t v = mesh.org(e);
-// // 			if (!vtx_is_encoded[v]) vtx(e);
-// // 			e = mesh.enext(e);
-// // 		} while (e != beg);
-// 		
-// // 		order.emplace_back(f, e);
-// 	}
-
 	void vtx(mesh::faceidx_t f, mesh::ledgeidx_t le)
 	{
-		mesh::conn::fepair e(f, le);
-		mesh::vtxidx_t v = mesh.conn.org(e);
-		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
-
-		AbsAttrCoder::vtx(f, le);
-		wr.reg_vtx(r);
-
-		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
-			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
-
-			mixing::View res = mesh.attrs[l].accu()[0];
-// 			std::cout << "org: "; mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)].print(std::cout); std::cout << std::endl;
-// 			std::cout << "pred: "; res.print(std::cout); std::cout << std::endl;
-			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
-			wr.attr_data(res, l);
-
-// 			ref_t attr_attrs = mesh.attrs.attr_vtx(v, a);
-// 			offset_t tidx = ghist[as].get(attr_attrs);
-// 			if (tidx == ghist[as].unset()) {
-// 				ghist[as].set(attr_attrs);
-// 				MElm ev = mesh.attrs[as][attr_attrs];
+// 		mesh::conn::fepair e(f, le);
+// 		mesh::vtxidx_t v = mesh.conn.org(e);
+// 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
 // 
-// // 				ref_t as = mesh.attrs.binding_vtx(r, a);
-// 				MElm eebig = mesh.attrs[as].big();
-// 				MElm ee = mesh.attrs[as].special(0);
-// 				ee.set([] (auto other) { return other; }, eebig);
+// 		AbsAttrCoder::vtx(f, le);
+// 		wr.reg_vtx(r);
 // 
-// 				//std::cout << "pred: " << ee.get<float>(0) << " " << ee.get<float>(1) << " " << ee.get<float>(2); std::cout << std::endl;
-// 	// 			std::cout << "pred: " << ee.at<uint32_t>(0) << " " << ee.at<uint32_t>(1) << " " << ee.at<uint32_t>(2); std::cout << std::endl;
-// 				ee.setq([] (int qqqq, const auto raw, const auto cur) { /*const int qq = 32;*//*assert_eq(qqqq,32);*/ /*if (qqqq != 32) {qqqq = 32;std::cerr << "Called" << std::endl;} */return pred::encodeDelta(raw, cur, qqqq); }, mesh.attrs[as][mesh.attrs.attr_vtx(v, a)], ee);
-// // 				std::cout << "corr: " << ee.at<uint32_t>(0) << " " << ee.at<uint32_t>(1) << " " << ee.at<uint32_t>(2); std::cout << std::endl;
-// 				wr.vtxabs(ee, as);
-// // 				std::cout << "raw: " << mesh.attrs[as][mesh.attrs.attr_vtx(v, a)].at<uint32_t>(0) << " " << mesh.attrs[as][mesh.attrs.attr_vtx(v, a)].at<uint32_t>(1) << " " << mesh.attrs[as][mesh.attrs.attr_vtx(v, a)].at<uint32_t>(2); std::cout << std::endl;
+// 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
+// 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
 // 
-// 			} else {
-// 				wr.vtxhist(tidx, as); // TODO: send negative offsets
-// 			}
-
-
-
-		}
+// 			mixing::View res = mesh.attrs[l].accu()[0];
+// 			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
+// 			wr.attr_data(res, l);
+// 		}
 	}
 
 // 	void face(faceidx_t f)
@@ -463,11 +246,11 @@ struct AttrCoder : AbsAttrCoder {
 // 		wr.reg_face(rf);
 // 		for (offset_t a = 0; a < mesh.attrs.num_attr_face(rf); ++a) {
 // 			ref_t as = mesh.attrs.binding_face(rf, a);
-// 			ref_t attr_attrs = mesh.attrs.attr_face(f, a);
-// 			offset_t tidx = ghist[as].get(attr_attrs);
+// 			ref_t attridx = mesh.attrs.attr_face(f, a);
+// 			offset_t tidx = ghist[as].get(attridx);
 // 			if (tidx == ghist[as].unset()) {
-// 				ghist[as].set(attr_attrs);
-// 				MElm ef = mesh.attrs[as][attr_attrs];
+// 				ghist[as].set(attridx);
+// 				MElm ef = mesh.attrs[as][attridx];
 // 				wr.faceabs(ef, as);
 // 			} else {
 // 				wr.facehist(tidx, as); // TODO: send negative offsets
@@ -480,11 +263,11 @@ struct AttrCoder : AbsAttrCoder {
 // 		wr.reg_face(rf);
 // 		for (offset_t a = 0; a < mesh.attrs.num_attr_face(rf); ++a) {
 // 			ref_t as = mesh.attrs.binding_face(rf, a);
-// 			ref_t attr_attrs = mesh.attrs.attr_face(f, a);
-// 			offset_t tidx = ghist[as].get(attr_attrs);
+// 			ref_t attridx = mesh.attrs.attr_face(f, a);
+// 			offset_t tidx = ghist[as].get(attridx);
 // 			if (tidx == ghist[as].unset()) {
-// 				ghist[as].set(attr_attrs);
-// 				MElm ef = mesh.attrs[as][attr_attrs];
+// 				ghist[as].set(attridx);
+// 				MElm ef = mesh.attrs[as][attridx];
 // 				if (rf == ro) {
 // 					MElm eo = mesh.attrs[as][mesh.attrs.attr_face(o, a)];
 // 					MElm c = mesh.attrs[as].special(0);
@@ -503,17 +286,17 @@ struct AttrCoder : AbsAttrCoder {
 // 		regidx_t rf = mesh.attrs.face2reg(f);
 // 		for (offset_t a = 0; a < mesh.attrs.num_attr_wedge(rf); ++a) {
 // 			ref_t as = mesh.attrs.binding_wedge(rf, a);
-// 			ref_t attr_attrs = mesh.attrs.attr_wedge(f, v, a);
+// 			ref_t attridx = mesh.attrs.attr_wedge(f, v, a);
 // 			bool lempty = lhist[a].empty(gv);
-// 			int loff = lhist[a].insert(gv, attr_attrs);
+// 			int loff = lhist[a].insert(gv, attridx);
 // 			if (loff != -1) {
 // 				wr.wedgelhist(loff, as);
 // 				continue;
 // 			}
-// 			offset_t tidx = ghist[as].get(attr_attrs);
+// 			offset_t tidx = ghist[as].get(attridx);
 // 			if (tidx == ghist[as].unset()) {
-// 				ghist[as].set(attr_attrs);
-// 				MElm ew = mesh.attrs[as][attr_attrs];
+// 				ghist[as].set(attridx);
+// 				MElm ew = mesh.attrs[as][attridx];
 // 				if (lempty) {
 // 					wr.wedgeabs(ew, as);
 // 				} else {
@@ -528,313 +311,231 @@ struct AttrCoder : AbsAttrCoder {
 // 			}
 // 		}
 // 	}
-
-// 	struct Paral { mesh::vtxidx_t v0, v1, vo; };
-// 	std::list<Paral> parals;
-
-
-
-// 	void code()
-// 	{
-// 		for (int i = 0; i < order.size(); ++i) {
-// 			
-// 		}
-// 	}
 };
-/*
-template <typename WR>
-struct AttrCoder {
-	attr::Attrs &attrs;
-	std::vector<GlobalHistory> ghist;
-	std::vector<LocalHistory> lhist;
-	WR &wr;
 
-	AttrCoder(attr::Attrs &_attrs, WR &_wr) : attrs(_attrs), wr(_wr), ghist(attrs.size()), lhist(attrs.size_wedge)
+
+template <typename RD>
+struct AttrDecoder : AbsAttrCoder {
+// 	attr::Attrs &attrs;
+// 	std::vector<LocalHistory> lhist;
+	RD &rd;
+	std::vector<mesh::attridx_t> cur_idx;
+
+	mesh::Builder &builder;
+// 	WR &wr;
+	std::vector<mesh::conn::fepair> order;
+// 	std::vector<bool> vtx_is_encoded;
+
+
+	
+	AttrDecoder(mesh::Builder &_builder, RD &_rd) : builder(_builder), rd(_rd), AbsAttrCoder(_builder.mesh)/*, ghist(attrs.size())*//*, lhist(attrs.size_wedge)*/, cur_idx(_builder.mesh.attrs.size(), 0)
 	{
-		for (ref_t i = 0; i < attrs.size(); ++i) {
-			ghist[i].resize(attrs[i].size());
-		}
-		for (offset_t i = 0; i < attrs.size_wedge; ++i) {
-			lhist[i].resize(attrs.num_vtx());
-		}
+// 		std::cout << "ilctrorsf " << mesh.attrs.size() << std::endl;
+// 		for (offset_t i = 0; i < attrs.size_wedge; ++i) {
+// 			lhist[i].resize(attrs.num_vtx());
+// 		}
 	}
 
-	void vtx(vtxidx_t v)
+	void vtx(mesh::faceidx_t f, mesh::ledgeidx_t le)
 	{
-		regidx_t rv = attrs.vtx2reg(v);
-		wr.reg_vtx(rv);
-		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
-			ref_t as = attrs.binding_vtx(rv, a);
-			ref_t attr_attrs = attrs.attr_vtx(v, a);
-			offset_t tidx = ghist[as].get(attr_attrs);
-			if (tidx == ghist[as].unset()) {
-				ghist[as].set(attr_attrs);
-				MElm ev = attrs[as][attr_attrs];
-				wr.vtxabs(ev, as);
-			} else {
-				wr.vtxhist(tidx, as); // TODO: send negative offsets
-			}
-		}
-	}
-	void vtx(vtxidx_t v, vtxidx_t l, vtxidx_t r, vtxidx_t o)
-	{
-		regidx_t rv = attrs.vtx2reg(v), rl = attrs.vtx2reg(l), rr = attrs.vtx2reg(r), ro = attrs.vtx2reg(o);
-		wr.reg_vtx(rv);
-		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
-			ref_t as = attrs.binding_vtx(rv, a);
-			ref_t attr_attrs = attrs.attr_vtx(v, a);
-			offset_t tidx = ghist[as].get(attr_attrs);
-			if (tidx == ghist[as].unset()) {
-				ghist[as].set(attr_attrs);
-				MElm ev = attrs[as][attr_attrs];
-
-				if (rv == rl && rv == rr && rv == ro) {
-					// same regions: use parallelogramm
-					MElm el = attrs[as][attrs.attr_vtx(l, a)], er = attrs[as][attrs.attr_vtx(r, a)], eo = attrs[as][attrs.attr_vtx(o, a)];
-					MElm c = attrs[as].special(0);
-// 					c.set([] (auto e0v, auto e1v, auto vtv, auto vv) { return usub(float2int_all(vv, sizeof(vv) << 3), float2int_all((decltype(vv))add64(e1v, sub64(e0v, vtv)), sizeof(vv) << 3)); }, el, er, eo, ev); // TODO: This generate signed values, even if they were unsigned
-					c.setq([] (uint8_t q, auto e0v, auto e1v, auto vtv, auto vv) { return pred::encode(vv, e0v, e1v, vtv, q); }, el, er, eo, ev);
-// 					c.set([] (auto e0v, auto e1v, auto vtv, auto vv) { return usub(float2int_all(vv), float2int_all(vtv)); }, el, er, eo, ev); // TODO: This generate signed values, even if they were unsigned
-// 					c.enforce_quant();
-					wr.vtxparal(c, as);
-				} else {
-					// different regions
-					wr.vtxabs(ev, as);
-				}
-			} else {
-				wr.vtxhist(tidx, as); // TODO: send negative offsets
-			}
-		}
-	}
-
-};*/
-
-// template <typename RD>
-// struct AttrDecoder : AbsAttrCoder {
-// // 	attr::Attrs &attrs;
-// // 	std::vector<LocalHistory> lhist;
-// 	RD &rd;
-// 	std::vector<ref_t> cur_idx;
-// 
-// 	mesh::Mesh &mesh;
-// // 	WR &wr;
-// 	std::vector<conn::fepair> order;
-// // 	std::vector<bool> vtx_is_encoded;
-// 
-// 
-// 	
-// 	AttrDecoder(mesh::Mesh &_mesh, RD &_rd) : mesh(_mesh), rd(_rd), AbsAttrCoder(_mesh)/*, ghist(attrs.size())*//*, lhist(attrs.size_wedge)*/, cur_idx(_mesh.attrs.size(), 0)
-// 	{
-// // 		std::cout << "ilctrorsf " << mesh.attrs.size() << std::endl;
-// // 		for (offset_t i = 0; i < attrs.size_wedge; ++i) {
-// // 			lhist[i].resize(attrs.num_vtx());
-// // 		}
-// 	}
-// 
-// 	void vtx(faceidx_t f, ledgeidx_t le)
-// 	{
-// 		conn::fepair e(f, le);
+// 		mesh::conn::fepair e(f, le);
 // 		order.push_back(e);
-// 		vtxidx_t v = mesh.org(e);
-// // 		std::cout << v<< std::endl;
+// 		mesh::vtxidx_t v = builder.mesh.conn.org(e);
 // 
 // 		// save delta to store
-// 		mesh::regidx_t rv = mesh.attrs.vtx2reg(v) = rd.reg_vtx();
-// 		mesh.attrs.add_vtx();
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_vtx(rv); ++a) {
-// 			ref_t as = mesh.attrs.binding_vtx(rv, a);
-// 			ref_t attr_attrs;
-// 			attr_attrs = cur_idx[as]++;
-// 			rd.vtxabs(mesh.attrs[as][attr_attrs], as);
+// 		mesh::regidx_t r = rd.reg_vtx();
+// 		builder.vtx_reg(v, r);
+// 		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
+// 			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
 // 
-// 			mesh.attrs.attr_vtx(v, a) = attr_attrs;
+// 			mesh::attridx_t attridx = cur_idx[l]++;
+// 			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+// 
+// 			builder.bind_vtx_attr(v, a, attridx);
 // 		}
-// 	}
+	}
+
+	void vtx_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+// 		if (f < 30)
+// 		std::cout << f << " " << le << std::endl;
+		mesh::conn::fepair e(f, le);
+		mesh::vtxidx_t v = mesh.conn.org(e);
+		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
+
+		AbsAttrCoder::vtx(f, le);
+
+		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
+			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
+
+			mesh::attridx_t attridx = mesh.attrs.binding_vtx_attr(v, a);
+			mixing::View pred = mesh.attrs[l].accu()[0];
+			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
+		}
+	}
+
+	void decode()
+	{
+		for (int i = 0; i < order.size(); ++i) {
+			mesh::conn::fepair &e = order[i];
+
+			vtx_post(e.f(), e.e());
+		}
+	}
+
 // 
-// 	void vtx_post(faceidx_t f, ledgeidx_t le)
+// 	void vtx(vtxidx_t v)
 // 	{
-// 		conn::fepair e(f, le);
-// 		mesh::vtxidx_t v = mesh.org(e);
-// 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
-// 
-// // 		std::cerr << "v1" << std::endl;
-// 		AbsAttrCoder::vtx(f, le);
-// // 		std::cerr << "v2" << std::endl;
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_vtx(r); ++a) {
-// 			ref_t as = mesh.attrs.binding_vtx(r, a);
-// 			MElm ee = mesh.attrs[as].special(0); // TODO: big
-// 			std::cout << "pred: " << ee.at<uint32_t>(0) << " " << ee.at<uint32_t>(1) << " " << ee.at<uint32_t>(2); std::cout << std::endl;
-// // 			std::cout << "pred: " << ee.at<uint32_t>(0) << " " << ee.at<uint32_t>(1) << " " << ee.at<uint32_t>(2); std::cout << std::endl;
-// 			ref_t attr_attrs = mesh.attrs.attr_vtx(v, a);
-// 			assert_lt(attr_attrs, mesh.attrs[as].size());
-// 			std::cout << "corr: " << mesh.attrs[as][attr_attrs].at<uint32_t>(0) << " " << mesh.attrs[as][attr_attrs].at<uint32_t>(1) << " " << mesh.attrs[as][attr_attrs].at<uint32_t>(2); std::cout << std::endl;
-// 			mesh.attrs[as][attr_attrs].setq([] (int q, const auto delta, const auto pred) { /*assert_eq(q,32);*/return pred::decodeDelta(delta, pred, q); }, mesh.attrs[as][attr_attrs], ee);
-// 			std::cout << "raw: " << mesh.attrs[as][attr_attrs].at<uint32_t>(0) << " " << mesh.attrs[as][attr_attrs].at<uint32_t>(1) << " " << mesh.attrs[as][attr_attrs].at<uint32_t>(2); std::cout << std::endl;
+// 		regidx_t rv = attrs.vtx2reg(v) = rd.reg_vtx();
+// 		attrs.add_vtx();
+// 		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
+// 			ref_t as = attrs.binding_vtx(rv, a);
+// 			ref_t attridx;
+// 			switch (rd.attr_type(as)) {
+// 			case DATA:
+// 				attridx = cur_idx[as]++;
+// 				rd.vtxabs(attrs[as][attridx], as);
+// 				break;
+// 			case HIST:
+// 				attridx = rd.vtxhist(as);
+// 				break;
+// 			default:
+// 				// TODO: error
+// 				;
+// 			}
+// 			attrs.attr_vtx(v, a) = attridx;
 // 		}
 // 	}
-// 
-// 	void decode()
+// 	void vtx(vtxidx_t v, vtxidx_t l, vtxidx_t r, vtxidx_t o)
 // 	{
-// 		for (int i = 0; i < order.size(); ++i) {
-// 			conn::fepair &e = order[i];
+// 		regidx_t rv = attrs.vtx2reg(v) = rd.reg_vtx(), rl = attrs.vtx2reg(l), rr = attrs.vtx2reg(r), ro = attrs.vtx2reg(o);
+// 		attrs.add_vtx();
+// // 			std::cout << "YOOOO---" << std::endl;
+// 		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
+// 			ref_t as = attrs.binding_vtx(rv, a);
+// 			ref_t attridx;
+// // 			std::cout << "YOOOO" << std::endl;
+// 			switch (rd.attr_type(as)) {
+// 			case DATA: {
+// 				attridx = cur_idx[as]++;
+// 				MElm ev = attrs[as][attridx];
+// 				if (rv == rl && rv == rr && rv == ro) {
+// 					// same regions: use parallelogramm
+// 					MElm el = attrs[as][attrs.attr_vtx(l, a)], er = attrs[as][attrs.attr_vtx(r, a)], eo = attrs[as][attrs.attr_vtx(o, a)];
+// 					rd.vtxparal(ev, as);
+// // 					ev.set([] (auto e0v, auto e1v, auto vtv, auto err) { return int2float_all(uadd(err, float2int_all(add64(e1v, sub64(e0v, vtv)), sizeof(err) << 3))); }
+// 					ev.setq([] (uint8_t q, auto e0v, auto e1v, auto vtv, auto err) { return pred::decode(err, e0v, e1v, vtv, q); }, el, er, eo, ev);
+// 				} else {
+// 					// different regions
+// 					rd.vtxabs(ev, as);
+// 				}
+// 				break;}
+// 			case HIST:
+// 				attridx = rd.vtxhist(as);
+// 				break;
+// 			default:
+// 				// TODO: error
+// 				;
+// 			}
+// 			attrs.attr_vtx(v, a) = attridx;
+// 		}
 // 
-// 			vtx_post(e.f(), e.e());
+// 	}
+// 	void face(faceidx_t f, ledgeidx_t ne)
+// 	{
+// 		regidx_t rf = attrs.face2reg(f) = rd.reg_face();
+// 		attrs.add_face_ne(ne);
+// 		for (offset_t a = 0; a < attrs.num_attr_face(rf); ++a) {
+// 			ref_t as = attrs.binding_face(rf, a);
+// 			ref_t attridx;
+// 			switch (rd.attr_type(as)) {
+// 			case DATA:
+// 				attridx = cur_idx[as]++;
+// 				rd.faceabs(attrs[as][attridx], as);
+// 				break;
+// 			case HIST:
+// 				attridx = rd.facehist(as);
+// 				break;
+// 			default:
+// 				// TODO: error
+// 				;
+// 			}
+// 			attrs.attr_face(f, a) = attridx;
 // 		}
 // 	}
+// 	void face(faceidx_t f, faceidx_t o, ledgeidx_t ne)
+// 	{
+// 		regidx_t rf = attrs.face2reg(f) = rd.reg_face(), ro = attrs.face2reg(o);
+// 		attrs.add_face_ne(ne); // TODO
+// 		for (offset_t a = 0; a < attrs.num_attr_face(rf); ++a) {
+// 			ref_t as = attrs.binding_face(rf, a);
+// 			ref_t attridx;
+// 			switch (rd.attr_type(as)) {
+// 			case DATA: {
+// 				attridx = cur_idx[as]++;
+// 				MElm ef = attrs[as][attridx];
+// 				if (rf == ro) {
+// 					MElm eo = attrs[as][attrs.attr_face(o, a)];
+// 					rd.facediff(ef, as);
+// 					ef.set([] (auto err, auto vneighv) { return int2float_all(xor_all(err, float2int_all(vneighv, sizeof(vneighv) << 3))); }, ef, eo);
+// 				} else {
+// 					rd.faceabs(ef, as);
+// 				}
+// 				break;}
+// 			case HIST:
+// 				attridx = rd.facehist(as);
+// 				break;
+// 			default:
+// 				// TODO: error
+// 				;
+// 			}
+// 			attrs.attr_face(f, a) = attridx;
+// 		}
+// 	}
+// 	void wedge(faceidx_t f, lvtxidx_t v, vtxidx_t gv)
+// 	{
+// // 		std::cout << "sf1" << std::endl;
+// 		regidx_t rf = attrs.face2reg(f); // already set by face(...)
+// 		for (offset_t a = 0; a < attrs.num_attr_wedge(rf); ++a) {
+// // 			std::cout << a << " " << lhist.size() << std::endl;
+// // 			std::cout << "sf2" << std::endl;
+// 			ref_t as = attrs.binding_wedge(rf, a);
+// 			ref_t attridx;
+// 			switch (rd.attr_type(as)) {
+// 			case DATA: {
+// 				attridx = cur_idx[as]++;
+// // 				std::cout << attridx << " " << attrs[as].size() << std::endl;
+// 				MElm ew = attrs[as][attridx];
+// 				if (lhist[a].empty(gv)) {
+// 					rd.wedgeabs(ew, as);
+// 				} else {
+// 					MElm eo = attrs[as][lhist[a].find(gv, 0)];
+// 					rd.wedgediff(ew, as);
+// 					// encoder:
+// // 					c.set([] (auto av, auto aoldv) { return xor_all(float2int_all(av, sizeof(av) << 3), float2int_all(aoldv, sizeof(av) << 3)); }, ew, eo);
 // 
-// // 
-// // 	void vtx(vtxidx_t v)
-// // 	{
-// // 		regidx_t rv = attrs.vtx2reg(v) = rd.reg_vtx();
-// // 		attrs.add_vtx();
-// // 		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
-// // 			ref_t as = attrs.binding_vtx(rv, a);
-// // 			ref_t attr_attrs;
-// // 			switch (rd.attr_type(as)) {
-// // 			case DATA:
-// // 				attr_attrs = cur_idx[as]++;
-// // 				rd.vtxabs(attrs[as][attr_attrs], as);
-// // 				break;
-// // 			case HIST:
-// // 				attr_attrs = rd.vtxhist(as);
-// // 				break;
-// // 			default:
-// // 				// TODO: error
-// // 				;
-// // 			}
-// // 			attrs.attr_vtx(v, a) = attr_attrs;
-// // 		}
-// // 	}
-// // 	void vtx(vtxidx_t v, vtxidx_t l, vtxidx_t r, vtxidx_t o)
-// // 	{
-// // 		regidx_t rv = attrs.vtx2reg(v) = rd.reg_vtx(), rl = attrs.vtx2reg(l), rr = attrs.vtx2reg(r), ro = attrs.vtx2reg(o);
-// // 		attrs.add_vtx();
-// // // 			std::cout << "YOOOO---" << std::endl;
-// // 		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
-// // 			ref_t as = attrs.binding_vtx(rv, a);
-// // 			ref_t attr_attrs;
-// // // 			std::cout << "YOOOO" << std::endl;
-// // 			switch (rd.attr_type(as)) {
-// // 			case DATA: {
-// // 				attr_attrs = cur_idx[as]++;
-// // 				MElm ev = attrs[as][attr_attrs];
-// // 				if (rv == rl && rv == rr && rv == ro) {
-// // 					// same regions: use parallelogramm
-// // 					MElm el = attrs[as][attrs.attr_vtx(l, a)], er = attrs[as][attrs.attr_vtx(r, a)], eo = attrs[as][attrs.attr_vtx(o, a)];
-// // 					rd.vtxparal(ev, as);
-// // // 					ev.set([] (auto e0v, auto e1v, auto vtv, auto err) { return int2float_all(uadd(err, float2int_all(add64(e1v, sub64(e0v, vtv)), sizeof(err) << 3))); }
-// // 					ev.setq([] (uint8_t q, auto e0v, auto e1v, auto vtv, auto err) { return pred::decode(err, e0v, e1v, vtv, q); }, el, er, eo, ev);
-// // 				} else {
-// // 					// different regions
-// // 					rd.vtxabs(ev, as);
-// // 				}
-// // 				break;}
-// // 			case HIST:
-// // 				attr_attrs = rd.vtxhist(as);
-// // 				break;
-// // 			default:
-// // 				// TODO: error
-// // 				;
-// // 			}
-// // 			attrs.attr_vtx(v, a) = attr_attrs;
-// // 		}
-// // 
-// // 	}
-// // 	void face(faceidx_t f, ledgeidx_t ne)
-// // 	{
-// // 		regidx_t rf = attrs.face2reg(f) = rd.reg_face();
-// // 		attrs.add_face_ne(ne);
-// // 		for (offset_t a = 0; a < attrs.num_attr_face(rf); ++a) {
-// // 			ref_t as = attrs.binding_face(rf, a);
-// // 			ref_t attr_attrs;
-// // 			switch (rd.attr_type(as)) {
-// // 			case DATA:
-// // 				attr_attrs = cur_idx[as]++;
-// // 				rd.faceabs(attrs[as][attr_attrs], as);
-// // 				break;
-// // 			case HIST:
-// // 				attr_attrs = rd.facehist(as);
-// // 				break;
-// // 			default:
-// // 				// TODO: error
-// // 				;
-// // 			}
-// // 			attrs.attr_face(f, a) = attr_attrs;
-// // 		}
-// // 	}
-// // 	void face(faceidx_t f, faceidx_t o, ledgeidx_t ne)
-// // 	{
-// // 		regidx_t rf = attrs.face2reg(f) = rd.reg_face(), ro = attrs.face2reg(o);
-// // 		attrs.add_face_ne(ne); // TODO
-// // 		for (offset_t a = 0; a < attrs.num_attr_face(rf); ++a) {
-// // 			ref_t as = attrs.binding_face(rf, a);
-// // 			ref_t attr_attrs;
-// // 			switch (rd.attr_type(as)) {
-// // 			case DATA: {
-// // 				attr_attrs = cur_idx[as]++;
-// // 				MElm ef = attrs[as][attr_attrs];
-// // 				if (rf == ro) {
-// // 					MElm eo = attrs[as][attrs.attr_face(o, a)];
-// // 					rd.facediff(ef, as);
-// // 					ef.set([] (auto err, auto vneighv) { return int2float_all(xor_all(err, float2int_all(vneighv, sizeof(vneighv) << 3))); }, ef, eo);
-// // 				} else {
-// // 					rd.faceabs(ef, as);
-// // 				}
-// // 				break;}
-// // 			case HIST:
-// // 				attr_attrs = rd.facehist(as);
-// // 				break;
-// // 			default:
-// // 				// TODO: error
-// // 				;
-// // 			}
-// // 			attrs.attr_face(f, a) = attr_attrs;
-// // 		}
-// // 	}
-// // 	void wedge(faceidx_t f, lvtxidx_t v, vtxidx_t gv)
-// // 	{
-// // // 		std::cout << "sf1" << std::endl;
-// // 		regidx_t rf = attrs.face2reg(f); // already set by face(...)
-// // 		for (offset_t a = 0; a < attrs.num_attr_wedge(rf); ++a) {
-// // // 			std::cout << a << " " << lhist.size() << std::endl;
-// // // 			std::cout << "sf2" << std::endl;
-// // 			ref_t as = attrs.binding_wedge(rf, a);
-// // 			ref_t attr_attrs;
-// // 			switch (rd.attr_type(as)) {
-// // 			case DATA: {
-// // 				attr_attrs = cur_idx[as]++;
-// // // 				std::cout << attr_attrs << " " << attrs[as].size() << std::endl;
-// // 				MElm ew = attrs[as][attr_attrs];
-// // 				if (lhist[a].empty(gv)) {
-// // 					rd.wedgeabs(ew, as);
-// // 				} else {
-// // 					MElm eo = attrs[as][lhist[a].find(gv, 0)];
-// // 					rd.wedgediff(ew, as);
-// // 					// encoder:
-// // // 					c.set([] (auto av, auto aoldv) { return xor_all(float2int_all(av, sizeof(av) << 3), float2int_all(aoldv, sizeof(av) << 3)); }, ew, eo);
-// // 
-// // 					ew.set([] (auto err, auto aoldv) { return int2float_all(xor_all(err, float2int_all(aoldv, sizeof(err) << 3))); }, ew, eo);
-// // 					// TODO
-// // 				}
-// // 				lhist[a].insert(gv, attr_attrs);
-// // 				break;}
-// // 			case HIST:
-// // 				attr_attrs = rd.wedgehist(as);
-// // 				lhist[a].insert(gv, attr_attrs);
-// // 				break;
-// // 			case LHIST:
-// // 				attr_attrs = lhist[a].find(gv, rd.wedgelhist(as));
-// // 				break;
-// // 			default:
-// // 				// TODO: error
-// // 				;
-// // 			}
-// // // 			std::cout << "f: " << f << " v: " << v << " a: " << a << " val: " << attr_attrs << std::endl;
-// // 			attrs.attr_wedge(f, v, a) = attr_attrs;
-// // // 			std::cout << "sf3" << std::endl;
-// // 		}
-// // // 		std::cout << "finsf" << std::endl;
-// // 	}
-// };
+// 					ew.set([] (auto err, auto aoldv) { return int2float_all(xor_all(err, float2int_all(aoldv, sizeof(err) << 3))); }, ew, eo);
+// 					// TODO
+// 				}
+// 				lhist[a].insert(gv, attridx);
+// 				break;}
+// 			case HIST:
+// 				attridx = rd.wedgehist(as);
+// 				lhist[a].insert(gv, attridx);
+// 				break;
+// 			case LHIST:
+// 				attridx = lhist[a].find(gv, rd.wedgelhist(as));
+// 				break;
+// 			default:
+// 				// TODO: error
+// 				;
+// 			}
+// // 			std::cout << "f: " << f << " v: " << v << " a: " << a << " val: " << attridx << std::endl;
+// 			attrs.attr_wedge(f, v, a) = attridx;
+// // 			std::cout << "sf3" << std::endl;
+// 		}
+// // 		std::cout << "finsf" << std::endl;
+// 	}
+};
 
 }

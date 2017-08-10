@@ -60,6 +60,7 @@ struct ModelMult : Model<TF> {
 		assert_eq(sizeof(T), n);
 		for (int i = 0; i < sizeof(T); ++i) {
 			s[i] = coder(this->stats[i]);
+			std::cout << "cur char: " << i << " = " << (int)s[i] << " cur freq: " << this->stats[i].frequency(s[i]) << std::endl;
 			this->stats[i].inc(s[i]);
 		}
 	}

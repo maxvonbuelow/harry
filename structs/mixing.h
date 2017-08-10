@@ -187,7 +187,7 @@ struct View {
 	}
 	int bytes(int i) const
 	{
-		return SIZES[fmt.type(i)];
+		return SIZES[fmt.stype(i)];
 	}
 	unsigned char *data(int i)
 	{

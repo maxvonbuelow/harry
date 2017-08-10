@@ -78,6 +78,12 @@ struct CutBorderBase {
 		static const char *lut[] = { "_", "<", "\xE2\x88\x9E", "\xE2\x88\xAA", "~", "*", ">", "?" };
 		return lut[op];
 	}
+	static const char* iop2str(INITOP iop)
+	{
+		//"\xE2\x96\xB3", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB3", 
+		static const char *lut[] = { "\xE2\x96\xB3", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB3", "/" };
+		return lut[iop];
+	}
 };
 
 template <typename T>
@@ -101,8 +107,12 @@ struct CutBorder : CutBorderBase {
 	// acceleration structure for fast lookup if a vertex is currently on the cutboder
 	std::vector<int> vertices;
 
+	int _maxParts, _maxElems;
+
 	CutBorder(int maxParts, int maxElems, int vertcnthint = 0) : max_elements(0), max_parts(1), vertices(vertcnthint, 0), have_swap(false)
 	{
+		_maxParts = maxParts; _maxElems = maxElems;
+
 		parts = new Part[maxParts]();
 		++maxElems;
 		elements = new Element[maxElems]();
@@ -169,6 +179,7 @@ struct CutBorder : CutBorderBase {
 	Element *new_element(Data v)
 	{
 		activate_vertex(v.idx);
+		assert_lt(emptyElements, elements + _maxElems);
 		Element *e = new (emptyElements) Element(v);
 		assert_eq(e->isEdgeBegin, true);
 		emptyElements = emptyElements->next;
@@ -270,6 +281,7 @@ struct CutBorder : CutBorderBase {
 	void new_part(Element *root)
 	{
 		++part;
+		assert_lt(part, parts + _maxParts);
 		part->rootElement = root;
 		max_parts = std::max(max_parts, (int)(part - parts) + 1);
 	}

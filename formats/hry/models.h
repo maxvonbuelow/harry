@@ -115,16 +115,16 @@ struct ModelVector : std::vector<arith::Model<TF>*>
 		for (int i = 0; i < fmt.size(); ++i) {
 			arith::Model<TF> *model;
 			switch (fmt.stype(i)) {
-			case mixing::FLOAT:  model = new arith::ModelMult<uint32_t, S, TF>(); break;
-			case mixing::DOUBLE: model = new arith::ModelMult<uint64_t, S, TF>(); break;
-			case mixing::ULONG:  model = new arith::ModelMult<uint64_t, S, TF>(); break;
-			case mixing::LONG:   model = new arith::ModelMult<int64_t,  S, TF>(); break;
-			case mixing::UINT:   model = new arith::ModelMult<uint32_t, S, TF>(); break;
-			case mixing::INT:    model = new arith::ModelMult<int32_t,  S, TF>(); break;
-			case mixing::USHORT: model = new arith::ModelMult<int16_t,  S, TF>(); break;
-			case mixing::SHORT:  model = new arith::ModelMult<uint16_t, S, TF>(); break;
-			case mixing::UCHAR:  model = new arith::ModelMult<int8_t,   S, TF>(); break;
-			case mixing::CHAR:   model = new arith::ModelMult<uint8_t,  S, TF>(); break;
+			case mixing::FLOAT:  model = new arith::ModelMult<uint32_t, S, TF>(); std::cout << "FLOAT" << std::endl; break;
+			case mixing::DOUBLE: model = new arith::ModelMult<uint64_t, S, TF>(); std::cout << "DOUBLE" << std::endl; break;
+			case mixing::ULONG:  model = new arith::ModelMult<uint64_t, S, TF>(); std::cout << "ULONG" << std::endl; break;
+			case mixing::LONG:   model = new arith::ModelMult<int64_t,  S, TF>(); std::cout << "LONG" << std::endl; break;
+			case mixing::UINT:   model = new arith::ModelMult<uint32_t, S, TF>(); std::cout << "UINT" << std::endl; break;
+			case mixing::INT:    model = new arith::ModelMult<int32_t,  S, TF>(); std::cout << "INT" << std::endl; break;
+			case mixing::USHORT: model = new arith::ModelMult<int16_t,  S, TF>(); std::cout << "USHORT" << std::endl; break;
+			case mixing::SHORT:  model = new arith::ModelMult<uint16_t, S, TF>(); std::cout << "SHORT" << std::endl; break;
+			case mixing::UCHAR:  model = new arith::ModelMult<int8_t,   S, TF>(); std::cout << "UCHAR" << std::endl; break;
+			case mixing::CHAR:   model = new arith::ModelMult<uint8_t,  S, TF>(); std::cout << "CHAR" << std::endl; break;
 			}
 			this->push_back(model);
 		}
@@ -161,6 +161,7 @@ struct ModelVector : std::vector<arith::Model<TF>*>
 	void dec(arith::Decoder<TF> &coder, mixing::View v)
 	{
 		for (int i = 0; i < fmt.size(); ++i) {
+// 			std::cout << "cur type: " << i << std::endl;
 			(*this)[i]->dec(coder, v.data(i), v.bytes(i));
 		}
 	}
@@ -181,6 +182,7 @@ struct HryModels {
 		conn_numtri(false), conn_regface(false), conn_regvtx(false)
 	{
 		for (int i = 0; i < mesh.attrs.size(); ++i) {
+// 			std::cout << "ALLOC " << mesh.attrs[i].fmt().size() << " " << mesh.attrs[i].fmt().bytes() << std::endl;
 			attr_data.push_back(new ModelVector<arith::AdaptiveStatisticsModule<>>(mesh.attrs[i].fmt()));
 		}
 
