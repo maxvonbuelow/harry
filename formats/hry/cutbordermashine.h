@@ -278,6 +278,9 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 				handle(f, curtri, ntri, v0.idx, v1.idx, v2op.idx, CutBorderBase::BORDER);
 				f = mesh.conn.face(gate);
 				CutBorderBase::OP bop = cutBorder.border();
+
+				if (mesh.conn.twin(gate) != gate) mesh.conn.swap(gate, gate); // fix bad border
+
 // 				bop = CutBorderBase::BORDER;
 				wr.border(bop);
 			} else {
