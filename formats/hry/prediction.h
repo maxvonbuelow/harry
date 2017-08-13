@@ -107,9 +107,7 @@ T decodeDelta(const T delta, const T pred, const int bits, std::true_type)
 {
 	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
 	transform::uint_t<sizeof(T)> deltaint = *((transform::uint_t<sizeof(T)>*)&delta);
-// 	transform::int_t<sizeof(T)> res = predint ^ deltaint;
-	transform::int_t<sizeof(T)> res = uint2int<T>(decodeDelta(/*(transform::uint_t<sizeof(T)>)*/deltaint/*^0x80000000*/, /*(transform::uint_t<sizeof(T)>)*/int2uint<T>(predint)/*^0x80000000*/, bits/*sizeof(T)<<3*/, std::false_type()));
-// 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
+	transform::int_t<sizeof(T)> res = uint2int<T>(decodeDelta(deltaint, int2uint<T>(predint), bits, std::false_type()));
 	T res2 = transform::int2float(res);
 	return res2;
 }
@@ -117,7 +115,6 @@ T decodeDelta(const T delta, const T pred, const int bits, std::true_type)
 template <class T>
 T decodeDelta(const T delta, const T pred, const int q)
 {
-// 	return transform::uadd(delta, pred);
 	return decodeDelta(delta, pred, quant2bits<T>(q), std::is_floating_point<T>());
 }
 
@@ -158,17 +155,11 @@ void printfloathex(float x)
 template <class T>
 T encodeDelta(const T raw, const T pred, const int bits, std::true_type)
 {
-// 	std::cout << bits << std::endl;
 	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
 	transform::int_t<sizeof(T)> rawint = transform::float2int(raw);
-// 	transform::int_t<sizeof(T)> res = predint ^ rawint;
 	transform::uint_t<sizeof(T)> res = encodeDelta(/*(transform::uint_t<sizeof(T)>)*/int2uint<T>(rawint)/*^0x80000000*/, /*(transform::uint_t<sizeof(T)>)*/int2uint<T>(predint)/*^0x80000000*/, bits/*sizeof(T)<<3*/, std::false_type());
-// 	transform::int_t<sizeof(T)> res = zigzag_encode(rawint - predint);
 	T r = *((T*)&res);
-// 	assert_eq(raw,
 
-// 	printfloathex(raw);
-// 	printfloathex(decodeDelta(r, pred, bits));
 	assert_eq(raw, decodeDelta(r, pred, bits));
 	
 	return r;
@@ -176,7 +167,6 @@ T encodeDelta(const T raw, const T pred, const int bits, std::true_type)
 template <class T>
 T encodeDelta(const T raw, const T pred, const int q)
 {
-// 	return transform::usub(raw, pred);
 	return encodeDelta(raw, pred, quant2bits<T>(q), std::is_floating_point<T>());
 }
  
@@ -230,7 +220,7 @@ T predict(const T v0, const T v1, const T v2, const int q)
 {
 	return predict(v0, v1, v2, quant2bits<T>(q), std::is_floating_point<T>());
 }
- 
+
 // template <class T>
 // T predictRange(const T min, const T max)
 // {

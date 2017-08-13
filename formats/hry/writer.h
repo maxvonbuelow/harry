@@ -125,10 +125,15 @@ void compress(std::ostream &os, M &mesh, D &draw)
 	::writer wr(models, coder);
 	attrcode::AttrCoder<::writer> ac(mesh, wr);
 	progress::handle prog;
+	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
 	encode(mesh, draw, wr, ac, prog);
-// 	std::cout << os.fail() << std::endl;
+	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << std::endl;
 	progress::handle proga;
 	ac.encode(proga);
+	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
+	std::cout << "Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count() << " ms" << std::endl;
 	coder.flush();
 }
 

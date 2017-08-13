@@ -31,17 +31,6 @@ inline int_t<S> flipfloat(int_t<S> i)
 
 template <typename T> T zigzag_encode(T a)
 {
-// 	int_t<sizeof(T)> c = *((int_t<sizeof(T)>*)&a);
-// 	if (c >= 0) {
-// 		uint_t<sizeof(T)> d = *((uint_t<sizeof(T)>*)&c);
-// 		d <<= 1;
-// 		return *((T*)&d);
-// 	}
-// 	c = -(c + 1);
-// 	uint_t<sizeof(T)> d = *((uint_t<sizeof(T)>*)&c);
-// 	d <<= 1;
-// 	d |= 1;
-// 	return *((T*)&d);
 	uint_t<sizeof(T)> c = *((uint_t<sizeof(T)>*)&a);
 	uint_t<sizeof(T)> r = (c << 1) ^ (((c >> ((sizeof(T) << 3) - 1)) != 0) ? -1 : 0);
 	return *((T*)&r);
@@ -84,7 +73,6 @@ template <typename T, typename U> int64_t sub64_impl(T a, U b, std::false_type) 
 
 template <typename T, typename U> T add64(T a, U b) { return add64_impl(a, b, std::is_floating_point<T>()); }
 template <typename T, typename U> T sub64(T a, U b) { return sub64_impl(a, b, std::is_floating_point<T>()); }
-// template <typename T, typename U> T 
 
 #define VERT_PRED_SUB
 
