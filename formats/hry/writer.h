@@ -123,9 +123,12 @@ void compress(std::ostream &os, M &mesh, D &draw)
 	arith::Encoder<> coder(os);
 	HryModels models(mesh);
 	::writer wr(models, coder);
+	attrcode::AttrCoder<::writer> ac(mesh, wr);
 	progress::handle prog;
-	encode(mesh, draw, wr, prog);
+	encode(mesh, draw, wr, ac, prog);
 // 	std::cout << os.fail() << std::endl;
+	progress::handle proga;
+	ac.encode(proga);
 	coder.flush();
 }
 
@@ -141,12 +144,12 @@ template <typename H>
 void write(std::ostream &os, H &handle)
 {
 #ifdef GUI
-	AssertMngr::set([] { AssertMngr::keepalive(); });
 	int argc = 0; char **argv;
 	QApplication app(argc, argv);
 	MainWindow *mainWindow = new MainWindow(handle.num_edge());
 	mainWindow->resize(mainWindow->sizeHint());
 	mainWindow->show();
+	AssertMngr::set([&] { /*AssertMngr::keepalive();*/((Window*)mainWindow->centralWidget())->glWidget->paused = true; });
 
 	drawer draw(((Window*)mainWindow->centralWidget())->glWidget, handle);
 	compress_bg(os, handle, draw, true);

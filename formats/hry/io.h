@@ -15,7 +15,7 @@ struct writer {
 
 	void order(int i)
 	{
-		i=0;
+// 		i=0;
 		models.order(i);
 	}
 
@@ -91,7 +91,7 @@ struct writer {
 	// Attributes
 	void attr_data(mixing::View e, mesh::listidx_t l)
 	{
-		std::cout << l << std::endl;
+// 		std::cout << l << std::endl;
 // 		++attrc;
 // 		std::cout << attrc << std::endl;
 		models.attr_data[l]->enc(coder, e);
@@ -122,12 +122,12 @@ private:
 
 	void iop(CutBorderBase::INITOP op)
 	{
-		os << "i " << op << std::endl;
+// 		os << "i " << op << std::endl;
 		models.conn_iop.encode(coder, op);
 	}
 	void op(CutBorderBase::OP op)
 	{
-		os << "o " << op << std::endl;
+// 		os << "o " << op << std::endl;
 		models.conn_op.encode(coder, op);
 	}
 
@@ -141,7 +141,7 @@ private:
 	}
 	void vertid(mesh::vtxidx_t v)
 	{
-		std::cout << "Encoding: " << std::hex << v << std::endl;
+// 		std::cout << "Encoding: " << std::hex << v << std::endl;
 		models.conn_vert.template encode<uint32_t>(coder, v);
 	}
 	void numtri(int n)
@@ -161,7 +161,7 @@ struct reader {
 
 	void order(int i)
 	{
-		i=0;
+// 		i=0;
 		models.order(i);
 	}
 
@@ -169,21 +169,21 @@ struct reader {
 	CutBorderBase::INITOP iop()
 	{
 		auto x = models.conn_iop.template decode<CutBorderBase::INITOP>(coder);
-		std::string id; int y;
-		is >> id >> y;
-		if (id != "i" || x != y) { std::cout <<std::endl << "ERR@i: " << id << " || " << CutBorderBase::iop2str(x) << " " << CutBorderBase::iop2str((decltype(x))y) << std::endl; std::exit(1); }
-		std::cout << "CURIOP: " << CutBorderBase::iop2str(x) << std::endl;
+// 		std::string id; int y;
+// 		is >> id >> y;
+// 		if (id != "i" || x != y) { std::cout <<std::endl << "ERR@i: " << id << " || " << CutBorderBase::iop2str(x) << " " << CutBorderBase::iop2str((decltype(x))y) << std::endl; std::exit(1); }
+// 		std::cout << "CURIOP: " << CutBorderBase::iop2str(x) << std::endl;
 // 		if (x == CutBorderBase::TRI111) std::cout << "HERE" << std::endl;
 		return x;
 	}
 	CutBorderBase::OP op()
 	{
-		std::cout << "decoding op" << std::endl;
+// 		std::cout << "decoding op" << std::endl;
 		auto x = models.conn_op.template decode<CutBorderBase::OP>(coder);
-		std::string id; int y;
-		is >> id >> y;
-		if (id != "o" || x != y) { std::cout << "ERR@o: " << id << " " << CutBorderBase::op2str(x) << " " << CutBorderBase::op2str((decltype(x))y) << std::endl; std::exit(1); }
-		std::cout << "CUROP: " << CutBorderBase::op2str(x) << std::endl;
+// 		std::string id; int y;
+// 		is >> id >> y;
+// 		if (id != "o" || x != y) { std::cout << "ERR@o: " << id << " " << CutBorderBase::op2str(x) << " " << CutBorderBase::op2str((decltype(x))y) << std::endl; std::exit(1); }
+// 		std::cout << "CUROP: " << CutBorderBase::op2str(x) << std::endl;
 		return x;
 	}
 	uint32_t elem()
@@ -197,7 +197,7 @@ struct reader {
 	mesh::vtxidx_t vertid()
 	{
 		auto x = models.conn_vert.template decode<uint32_t>(coder);
-		std::cout << "Decoding: " << std::hex << x << std::endl;
+// 		std::cout << "Decoding: " << std::hex << x << std::endl;
 		return x;
 	}
 	uint16_t numtri()

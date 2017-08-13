@@ -71,7 +71,7 @@ struct CutBorderBase {
 		TRI111,
 		EOM, IFIRST = INIT, ILAST = EOM
 	};
-	enum OP { BORDER, CONNBWD, SPLIT, UNION, NM, ADDVTX, CONNFWD, FIRST = BORDER, LAST = CONNFWD };
+	enum OP { BORDER, CONNBWD, SPLIT, UNION, NM, ADDVTX, CONNFWD, CLOSEBWD, CLOSEFWD, FIRST = BORDER, LAST = CONNFWD }; // close are meta operations; never transmitted
 	static const char* op2str(OP op)
 	{
 		//"\xE2\x96\xB3", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB3", 
@@ -326,7 +326,7 @@ struct CutBorder : CutBorderBase {
 
 		next(v2, v1);
 	}
-	Data connectForward()
+	Data connectForward(OP &op) // TODO: add border to realop
 	{
 // 		std::cout << "CONFWD ?? " << istri() << " " << part->nrEdges << " " << part->nrVertices << std::endl;
 		Data d = !element->next->isEdgeBegin ? Data(-1) : element->next->next->data;
@@ -336,6 +336,7 @@ struct CutBorder : CutBorderBase {
 			part->nrEdges = 0;
 
 			del_part();
+			op = CLOSEFWD;
 		} else {
 			element->isEdgeBegin = element->next->isEdgeBegin;
 			Element *e0 = element;
@@ -345,10 +346,11 @@ struct CutBorder : CutBorderBase {
 			e0->set_next(e1);
 
 			next(e1, e0);
+			op = CONNFWD;
 		}
 		return d;
 	}
-	Data connectBackward()
+	Data connectBackward(OP &op) // TODO: add border to realop
 	{
 // 		std::cout << "CONBWD" << std::endl;
 		Data d = !element->prev->isEdgeBegin ? Data(-1) : element->prev->data;
@@ -358,6 +360,7 @@ struct CutBorder : CutBorderBase {
 			part->nrEdges = 0;
 
 			del_part();
+			op = CLOSEBWD;
 		} else {
 			std::swap(element->data, element->prev->data);
 			element->isEdgeBegin = element->prev->isEdgeBegin;
@@ -369,6 +372,7 @@ struct CutBorder : CutBorderBase {
 
 // 			next(e1->next, e0);
 			next(e1->next, e1);
+			op = CONNBWD;
 		}
 		return d;
 	}
@@ -388,11 +392,12 @@ struct CutBorder : CutBorderBase {
 		} else {
 			if (part->nrVertices >= 1 && (part->nrVertices < 2 || element->prev->isEdgeBegin != element->next->isEdgeBegin)) {
 				++part->nrEdges;
+				OP dummy;
 				if (!element->prev->isEdgeBegin) {
-					connectBackward();
+					connectBackward(dummy);
 					return CONNBWD;
 				} else if (!element->next->isEdgeBegin) {
-					connectForward();
+					connectForward(dummy);
 					return CONNFWD;
 				}
 			} else if (part->nrVertices >= 2 && !element->prev->isEdgeBegin && !element->next->isEdgeBegin) {
@@ -533,11 +538,11 @@ struct CutBorder : CutBorderBase {
 			assert_eq(res.idx, v.idx);
 		} else {
 			if (element->next->isEdgeBegin && element->next->next->data.idx == v.idx) {
-				op = CONNFWD;
-				connectForward();
+// 				op = CONNFWD;
+				connectForward(op);
 			} else if (element->prev->isEdgeBegin && element->prev->data.idx == v.idx) {
-				op = CONNBWD;
-				connectBackward();
+// 				op = CONNBWD;
+				connectBackward(op);
 			} else if (i == 0) {
 				// this can not happen
 				assert_fail;

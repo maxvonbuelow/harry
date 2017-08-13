@@ -39,6 +39,11 @@ struct Builder {
 	Builder(Mesh &_mesh) : mesh(_mesh), builder_conn(_mesh.conn)
 	{}
 
+	void noautomerge()
+	{
+		builder_conn.automerge = false;
+	}
+
 	// Generic
 	vtxidx_t num_vtx()
 	{

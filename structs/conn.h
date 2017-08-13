@@ -143,9 +143,62 @@ struct Conn {
 	}
 	inline void fmerge(fepair a, fepair b)
 	{
+// 		assert_eq(twin(a), a); assert_eq(twin(b), b);
+// 		assert_ne(a.f(), b.f());
+// 		std::swap(edges[f.off(a.f()) + a.e()].twin, edges[f.off(b.f()) + b.e()].twin);
 		edges[f.off(a.f()) + a.e()].twin = b;
 		edges[f.off(b.f()) + b.e()].twin = a;
 	}
+	inline void swap(fepair a, fepair b)
+	{
+		fmerge(edges[f.off(a.f()) + a.e()].twin, edges[f.off(a.f()) + a.e()].twin);
+		fmerge(edges[f.off(b.f()) + b.e()].twin, edges[f.off(b.f()) + b.e()].twin);
+		fmerge(a, b);
+	}
+
+// 	inline void tfan(mesh::conn::fepair ein, mesh::vtxidx_t debug)
+// 	{
+// 		assert_eq(debug, org(ein));
+// 		mesh::conn::fepair e = ein, t;
+// 		do {
+// // 			paral(e, r);
+// 			t = twin(e);
+// 			if (t == e) goto BWD;
+// 			e = enext(t);
+// 			assert_eq(debug, org(e));
+// 		} while (e != ein);
+// 		return;
+// 
+// BWD:
+// 		e = eprev(ein);
+// 		assert_eq(debug, dest(e));
+// 		t = twin(e);
+// 		if (e == t) return;
+// 		std::cout << "e: " << ein << std::endl;
+// 		std::cout << "eprev: " << e << std::endl;
+// 		std::cout << "t: " << t << std::endl;
+// 		e = t;
+// 		std::cout << "org: " << org(e) << " dest: " << dest(e) << " debug: " << debug << std::endl;
+// 		assert_eq(debug, org(e));
+// 		do {
+// // 			paral(e, r);
+// 			e = eprev(e);
+// 			t = twin(e);
+// 			if (e == t) break;
+// 			e = t;
+// 			assert_eq(debug, org(e));
+// 		} while (e != ein);
+// 	}
+// 	inline void test()
+// 	{
+// 		for (int f = 0; f < num_face(); ++f) {
+// 			for (int c = 0; c < num_edges(f); ++c) {
+// 				fepair e(f, c);
+// 				tfan(e, org(e));
+// 				assert_eq(twin(twin(e)), e);
+// 			}
+// 		}
+// 	}
 };
 
 struct Builder {
@@ -164,10 +217,16 @@ struct Builder {
 	ledgeidx_t cur_c;
 	vtxidx_t last_vtx;
 	vtxidx_t start_vtx;
+	bool automerge;
 
 	Conn &c;
 
-	inline Builder(Conn &_conn) : c(_conn), cur_f(std::numeric_limits<faceidx_t>::max())
+// 	inline ~Builder()
+// 	{
+// 		c.test();
+// 	}
+
+	inline Builder(Conn &_conn) : c(_conn), cur_f(std::numeric_limits<faceidx_t>::max()), automerge(true)
 	{}
 
 	inline void reserve(faceidx_t hint)
@@ -178,11 +237,18 @@ struct Builder {
 
 	inline void add_edge(vtxidx_t a, vtxidx_t b)
 	{
+// 		std::cout << a << " " << b << std::endl;
+		if (!automerge) return;
+
 		fepair p(cur_f, cur_c - 1);
 
 		edgemap::iterator twin = em.find(edgemap_e(b, a));
-		if (twin != em.end()) {
+		if (twin != em.end()) { // found a twin, merge
 			c.fmerge(twin->second, p);
+			if (cur_f == twin->second.f()) {
+				std::cout << twin->second.e() << " " << cur_c - 1 << std::endl;
+				std::exit(1);
+			}
 			em.erase(twin);
 		} else {
 			em.insert(std::make_pair(edgemap_e(a, b), p));
@@ -190,9 +256,11 @@ struct Builder {
 	}
 	inline faceidx_t face_begin(ledgeidx_t ne)
 	{
+// 		std::cout << std::endl;
+		assert_eq(ne, 3);
 		cur_f = c.add_face(ne);
 		cur_c = 0;
-		last_vtx = std::numeric_limits<ledgeidx_t>::max();
+		last_vtx = std::numeric_limits<vtxidx_t>::max();
 		return cur_f;
 	}
 	inline void face_end()
@@ -201,8 +269,9 @@ struct Builder {
 	}
 	inline void set_org(vtxidx_t vtx)
 	{
+// 		std::cout << "f: " << cur_f << " " << vtx << std::endl;
 		c.set_org(cur_f, cur_c, vtx);
-		if (last_vtx != std::numeric_limits<ledgeidx_t>::max()) add_edge(last_vtx, vtx);
+		if (last_vtx != std::numeric_limits<vtxidx_t>::max()) add_edge(last_vtx, vtx);
 		else start_vtx = vtx;
 		++cur_c;
 		last_vtx = vtx;

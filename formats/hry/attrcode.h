@@ -91,13 +91,16 @@ struct AbsAttrCoder {
 	{
 // 		test<uint16_t>();
 	}
+	int num_cand;
 
 	void use_paral(mesh::vtxidx_t v0, mesh::vtxidx_t v1, mesh::vtxidx_t vo, mesh::regidx_t r)
 	{
+		++num_cand;
 		if (!vtx_is_encoded[v0] || !vtx_is_encoded[v1] || !vtx_is_encoded[vo]) return;
 		mesh::regidx_t r0 = mesh.attrs.vtx2reg(v0), r1 = mesh.attrs.vtx2reg(v1), ro = mesh.attrs.vtx2reg(vo);
 		if (r0 != r || r1 != r || ro != r) return;
 
+// 		if (curparal != 0) return;
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
 
@@ -128,35 +131,46 @@ struct AbsAttrCoder {
 		if (mesh.conn.num_edges(e.f()) > 4) // when polygon is a pentagon or more, we have two parallelograms
 			use_paral(mesh.conn.org(e0), mesh.conn.org(e1), mesh.conn.org(mesh.conn.eprev(e)), r);
 	}
-	void tfan(mesh::conn::fepair ein, mesh::regidx_t r/*, mesh::vtxidx_t debug*/)
+	void tfan(mesh::conn::fepair ein, mesh::regidx_t r, mesh::vtxidx_t debug)
 	{
 		mesh::conn::fepair e = ein, t;
 		do {
-// 			std::cout << "swag " << e << " " << ein << std::endl;
 			paral(e, r);
 			t = mesh.conn.twin(e);
 			if (t == e) goto BWD;
 			e = mesh.conn.enext(t);
-// 			assert_eq(debug, mesh.conn.org(e));
+			assert_eq(debug, mesh.conn.org(e));
 		} while (e != ein);
 		return;
 
 BWD:
-// 		std::cout << "bwd" << std::endl;
-		t = mesh.conn.twin(mesh.conn.eprev(ein));
+		e = mesh.conn.eprev(ein);
+		t = mesh.conn.twin(e);
 		if (e == t) return;
 		e = t;
+		assert_eq(debug, mesh.conn.org(e));
 		do {
 			paral(e, r);
 			e = mesh.conn.eprev(e);
 			t = mesh.conn.twin(e);
 			if (e == t) break;
 			e = t;
+			assert_eq(debug, mesh.conn.org(e));
 		} while (e != ein);
 	}
 
+	std::ifstream is;
+	std::ofstream os;
+	void initis()
+	{
+		is = std::ifstream("parals.dbg");
+	}
+	void initos()
+	{
+		os = std::ofstream("parals.dbg");
+	}
 	int parals = 0;
-	void vtx(mesh::faceidx_t ff, mesh::ledgeidx_t ee)
+	void vtx(mesh::faceidx_t ff, mesh::ledgeidx_t ee, bool in = false)
 	{
 		// TODO: ULONG and LONG must handled seperately: div first add then
 		mesh::conn::fepair e(ff, ee);
@@ -164,11 +178,21 @@ BWD:
 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
 
 		curparal = 0;
+		num_cand = 0;
 // 		std::cout << "sf1?" << std::endl;
-		tfan(e, r/*, v*/);
+		tfan(e, r, v);
 // 		std::cout << "sf2?" << std::endl;
 		vtx_is_encoded[v] = true;
 		int num_paral = curparal;
+		//TODO TODO
+		if (in) {
+			os << num_paral << " " << num_cand << std::endl;
+		} else {
+			int np2, nc2;
+			is >> np2 >> nc2;
+// 			assert_eq(np2, num_paral);
+// 			assert_eq(nc2, num_cand);
+		}
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
@@ -211,6 +235,7 @@ struct AttrCoder : AbsAttrCoder {
 // 	std::vector<GlobalHistory> ghist;
 // 	std::vector<LocalHistory> lhist;
 // 	std::vector<conn::fepair> order;
+	std::vector<mesh::conn::fepair> order;
 
 	AttrCoder(mesh::Mesh &_mesh, WR &_wr) : mesh(_mesh), wr(_wr), AbsAttrCoder(_mesh)/*, ghist(mesh.attrs.size()), lhist(mesh.attrs.size_wedge)*/
 	{
@@ -220,17 +245,23 @@ struct AttrCoder : AbsAttrCoder {
 // 		for (offset_t i = 0; i < mesh.attrs.size_wedge; ++i) {
 // 			lhist[i].resize(mesh.attrs.num_vtx());
 // 		}
+		this->initos();
 	}
 
 	void vtx(mesh::faceidx_t f, mesh::ledgeidx_t le)
 	{
 		mesh::conn::fepair e(f, le);
+		order.push_back(e);
+	}
+	void vtx_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+		mesh::conn::fepair e(f, le);
 		mesh::vtxidx_t v = mesh.conn.org(e);
 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
 
-		AbsAttrCoder::vtx(f, le);
+		AbsAttrCoder::vtx(f, le, true);
 		wr.reg_vtx(r);
-		std::cout << "REGION: " << r << " " << mesh.attrs.num_bindings_vtx_reg(r) << std::endl;
+// 		std::cout << "REGION: " << r << " " << mesh.attrs.num_bindings_vtx_reg(r) << std::endl;
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
@@ -239,6 +270,19 @@ struct AttrCoder : AbsAttrCoder {
 			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
 			wr.attr_data(res, l);
 		}
+	}
+
+	template <typename P>
+	void encode(P &prog)
+	{
+		prog.start(order.size());
+		for (int i = 0; i < order.size(); ++i) {
+			mesh::conn::fepair &e = order[i];
+
+			vtx_post(e.f(), e.e());
+			prog(i);
+		}
+		prog.end();
 	}
 
 // 	void face(faceidx_t f)
@@ -331,6 +375,7 @@ struct AttrDecoder : AbsAttrCoder {
 	
 	AttrDecoder(mesh::Builder &_builder, RD &_rd) : builder(_builder), rd(_rd), AbsAttrCoder(_builder.mesh)/*, ghist(attrs.size())*//*, lhist(attrs.size_wedge)*/, cur_idx(_builder.mesh.attrs.size(), 0)
 	{
+		this->initis();
 // 		std::cout << "ilctrorsf " << mesh.attrs.size() << std::endl;
 // 		for (offset_t i = 0; i < attrs.size_wedge; ++i) {
 // 			lhist[i].resize(attrs.num_vtx());
@@ -341,20 +386,6 @@ struct AttrDecoder : AbsAttrCoder {
 	{
 		mesh::conn::fepair e(f, le);
 		order.push_back(e);
-		mesh::vtxidx_t v = builder.mesh.conn.org(e);
-
-		// save delta to store
-		mesh::regidx_t r = rd.reg_vtx();
-		builder.vtx_reg(v, r);
-		std::cout << "REGION: " << r << " " << mesh.attrs.num_bindings_vtx_reg(r) << std::endl;
-		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
-			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
-
-			mesh::attridx_t attridx = cur_idx[l]++;
-			rd.attr_data(builder.mesh.attrs[l][attridx], l);
-
-			builder.bind_vtx_attr(v, a, attridx);
-		}
 	}
 
 	void vtx_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -362,27 +393,36 @@ struct AttrDecoder : AbsAttrCoder {
 // 		if (f < 30)
 // 		std::cout << f << " " << le << std::endl;
 		mesh::conn::fepair e(f, le);
-		mesh::vtxidx_t v = mesh.conn.org(e);
-		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
+		mesh::vtxidx_t v = builder.mesh.conn.org(e);
 
 		AbsAttrCoder::vtx(f, le);
 
+		mesh::regidx_t r = rd.reg_vtx();
+		builder.vtx_reg(v, r);
 		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
 
-			mesh::attridx_t attridx = mesh.attrs.binding_vtx_attr(v, a);
+			mesh::attridx_t attridx = cur_idx[l]++;
+			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+
+			builder.bind_vtx_attr(v, a, attridx);
+
 			mixing::View pred = mesh.attrs[l].accu()[0];
 			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
 		}
 	}
 
-	void decode()
+	template <typename P>
+	void decode(P &prog)
 	{
+		prog.start(order.size());
 		for (int i = 0; i < order.size(); ++i) {
 			mesh::conn::fepair &e = order[i];
 
 			vtx_post(e.f(), e.e());
+			prog(i);
 		}
+		prog.end();
 	}
 
 // 
