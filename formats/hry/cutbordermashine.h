@@ -46,16 +46,16 @@ struct EncoderData {
 	int vr;
 // 	AttrListElem *elems;
 
-	EncoderData() : a(INVALID_PAIR)
+	inline EncoderData() : a(INVALID_PAIR)
 	{}
 
-	void init(mesh::conn::fepair _a, int _vr)
+	inline void init(mesh::conn::fepair _a, int _vr)
 	{
 		a = _a;
 		vr = _vr;
 	}
 };
-std::ostream &operator<<(std::ostream &os, const EncoderData &v)
+inline std::ostream &operator<<(std::ostream &os, const EncoderData &v)
 {
 	return os << v.a;
 }
@@ -65,7 +65,7 @@ struct CBMStats {
 	int nm;
 };
 
-mesh::conn::fepair chooseTriangle(std::unordered_set<mesh::faceidx_t> &remaining_faces)
+inline mesh::conn::fepair chooseTriangle(std::unordered_set<mesh::faceidx_t> &remaining_faces)
 {
 	mesh::faceidx_t f = remaining_faces.find(0) == remaining_faces.end() ? *remaining_faces.begin() : 0;
 	mesh::conn::fepair a = mesh::conn::fepair(f, 0);
@@ -73,8 +73,7 @@ mesh::conn::fepair chooseTriangle(std::unordered_set<mesh::faceidx_t> &remaining
 	return a;
 }
 
-template <typename C>
-mesh::conn::fepair getVertexData(C &conn, std::unordered_set<mesh::faceidx_t> &remaining_faces, mesh::conn::fepair i)
+inline mesh::conn::fepair getVertexData(mesh::conn::Conn &conn, std::unordered_set<mesh::faceidx_t> &remaining_faces, mesh::conn::fepair i)
 {
 	mesh::conn::fepair a = conn.twin(i);
 	if (a == i) return INVALID_PAIR;
@@ -375,19 +374,19 @@ struct DecoderData {
 	mesh::conn::fepair a;
 	mesh::vtxidx_t vr;
 
-	void init(mesh::conn::fepair _a, int _vr)
+	inline void init(mesh::conn::fepair _a, int _vr)
 	{
 		a = _a;
 		vr = _vr;
 	}
 };
-std::ostream &operator<<(std::ostream &os, const DecoderData &v)
+inline std::ostream &operator<<(std::ostream &os, const DecoderData &v)
 {
 	return os << v.vr;
 }
 
-template <typename H, typename R, typename P>
-CBMStats decode(H &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
+template <typename R, typename P>
+CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 {
 	builder.noautomerge();
 

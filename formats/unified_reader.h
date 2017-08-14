@@ -34,17 +34,16 @@ FileType get_mesh_type(std::istream &is, const std::string &fn)
 	throw std::runtime_error("Not a mesh file");
 }
 
-template <typename H>
-void read(std::istream &is, const std::string &fn, H &handle)
+void read(std::istream &is, const std::string &fn, mesh::Mesh &mesh)
 {
 	std::string dir = fn.substr(0, fn.find_last_of("/\\"));
 	switch (get_mesh_type(is, fn))
 	{
 	case HRY:
-		hry::reader::read(is, handle);
+		hry::reader::read(is, mesh);
 		break;
 	case PLY:
-		ply::reader::read(is, handle);
+		ply::reader::read(is, mesh);
 		break;
 // 	case OBJ:
 // 		mesh_reader::obj::read(is, dir, builder, prog);
@@ -53,11 +52,10 @@ void read(std::istream &is, const std::string &fn, H &handle)
 		throw std::runtime_error("Currently unimplemented");
 	}
 }
-template <typename H>
-void read(const std::string &fn, H &handle)
+void read(const std::string &fn, mesh::Mesh &mesh)
 {
 	std::ifstream is(fn, std::ifstream::binary);
-	read(is, fn, handle);
+	read(is, fn, mesh);
 }
 
 }

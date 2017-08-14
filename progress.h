@@ -37,6 +37,7 @@
 #include <ostream>
 #include <cstring>
 #include <thread>
+#include <future>
 #include <atomic>
 #include <chrono>
 #include <iostream>
@@ -55,10 +56,10 @@ struct _winsize {
 	std::atomic<uint32_t> cols;
 	std::atomic<uint32_t> rows;
 };
-_winsize WINSIZE;
+static _winsize WINSIZE;
 
 #ifdef _WIN32
-void get_win_size(_winsize &size)
+inline void get_win_size(_winsize &size)
 {
 	CONSOLE_SCREEN_BUFFER_INFO csbi;
 
@@ -67,7 +68,7 @@ void get_win_size(_winsize &size)
 	size.rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
 }
 #else
-void get_win_size(_winsize &size)
+inline void get_win_size(_winsize &size)
 {
 	struct winsize win;
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &win);
@@ -76,12 +77,12 @@ void get_win_size(_winsize &size)
 }
 #endif
 
-void on_resize(int)
+static void on_resize(int)
 {
 	get_win_size(WINSIZE);
 }
 
-void init_signal()
+inline void init_signal()
 {
 #ifndef _WIN32
 	signal(SIGWINCH, on_resize);
@@ -92,63 +93,70 @@ void init_signal()
 static std::atomic<uint32_t> cur, count;
 enum ProgState { CREATED, RUNNING, TERM };
 static std::atomic<ProgState> state;
-static std::ostream *progos;
+
+static std::future<void> future;
+
+// static std::ostream std::cout;
 inline void printprog()
 {
 	float percent = (float)cur / (float)count;
 
 	int barwidth = WINSIZE.cols - 9;
 
-	*progos << "[";
+	std::cout << "[";
 	int pos = barwidth * percent;
 	for (int i = 0; i < barwidth; ++i) {
-		if (i < pos) *progos << "=";
-		else if (i == pos) *progos << ">";
-		else *progos << " ";
+		if (i < pos) std::cout << "=";
+		else if (i == pos) std::cout << ">";
+		else std::cout << " ";
 	}
-	*progos << "] " << (int)(percent * 100.0f) << " %";
-	*progos << '\r';
-	progos->flush();
+	std::cout << "] " << (int)(percent * 100.0f) << " %";
+	std::cout << '\r';
+// 	progos->flush();
+	std::cout.flush();
 }
 static void progthread()
 {
 	while (1) {
-		if (state == TERM) break;
-		if (state == RUNNING) printprog();
+		if (state == RUNNING || state == TERM) printprog();
+		if (state == TERM) {std::cout << "terminating" << std::endl; break;}
 		std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60fps
 	}
 }
 
-void createprog(std::ostream &os)
+inline void createprog(std::ostream &os)
 {
-	progos = &os;
+// 	progos = &std::cout;
 	init_signal();
 	state = CREATED;
 }
 
-void startprog(uint32_t c = 0)
+inline void startprog(uint32_t c = 0)
 {
-	cur = 0; count = c;
-	state = RUNNING;
-	std::thread(progthread).detach();
+// 	std::cout << "starting prog with " << c << std::endl;
+// 	cur = 0; count = c;
+// 	state = RUNNING;
+// // 	if (future.valid()) std::exit(1);
+// 	future = std::async(std::launch::async, progthread);
+// 	if (!future.valid()) std::cout << "Created inv fut" << std::endl;
 }
-void endprog()
+inline void endprog()
 {
-	cur = (uint32_t)count;
-	state = TERM;
-	printprog();
-	*progos << std::endl;
+// 	cur = (uint32_t)count;
+// 	state = TERM;
+// 	future.wait();
 }
-bool progterm()
+inline bool progterm()
 {
 	return state == TERM;
 }
-void setprog(uint32_t cu)
+inline void setprog(uint32_t cu)
 {
+// 	if (!future.valid()) std::cout << "FALIURE" << std::endl;
 	if (cu > count) count = cu;
 	cur = cu;
 }
-void setprog(uint32_t cu, uint32_t co)
+inline void setprog(uint32_t cu, uint32_t co)
 {
 	cur = cu;
 	count = co;
@@ -156,34 +164,34 @@ void setprog(uint32_t cu, uint32_t co)
 
 // simple progress handle
 struct handle {
-	handle(std::ostream &os = std::cout)
+	inline handle(std::ostream &os = std::cout)
 	{
 		createprog(os);
 	}
-	handle(std::ostream &os, uint32_t c) : handle(os)
+	inline handle(std::ostream &os, uint32_t c) : handle(os)
 	{
 		start(c);
 	}
-	~handle()
+	inline ~handle()
 	{
 		end();
 	}
-	void start(uint32_t c)
+	inline void start(uint32_t c)
 	{
 		startprog(c);
 	}
-	void end()
+	inline void end()
 	{
 		if (!progterm()) endprog();
 	}
-	void init(uint32_t co)
+	inline void init(uint32_t co)
 	{
 	}
-	void operator()(uint32_t cu)
+	inline void operator()(uint32_t cu)
 	{
 		setprog(cu);
 	}
-	void operator()(uint32_t cu, uint32_t co)
+	inline void operator()(uint32_t cu, uint32_t co)
 	{
 		setprog(cu, co);
 	}

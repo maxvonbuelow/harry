@@ -139,6 +139,22 @@ struct Builder {
 	{
 		return mesh.attrs[l][attr].data(eidx);
 	}
+	void attr_finished(listidx_t l, attridx_t attr)
+	{
+		mesh.attrs[l].finalize(attr);
+	}
+	void finished()
+	{
+		for (listidx_t l = 0; l < mesh.attrs.size(); ++l) {
+			mesh.attrs[l].finalize();
+		}
+	}
+	void finished_rev()
+	{
+		for (listidx_t l = 0; l < mesh.attrs.size(); ++l) {
+			mesh.attrs[l].finalize_rev();
+		}
+	}
 
 	// Connectivity
 	void face_begin(ledgeidx_t ne)

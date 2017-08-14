@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <stdint.h>
+#include <ostream>
 
 namespace mixing {
 
@@ -103,6 +104,15 @@ public:
 			default:
 				fmt.add(LONG);
 			}
+		}
+		return fmt;
+	}
+
+	Fmt dequantized() const
+	{
+		Fmt fmt;
+		for (int i = 0; i < size(); ++i) {
+			fmt.add(type(i));
 		}
 		return fmt;
 	}
@@ -355,6 +365,12 @@ public:
 	const Fmt &fmt()
 	{
 		return mfmt;
+	}
+
+	void set_fmt(Fmt nf)
+	{
+		mfmt = nf;
+		resize(size());
 	}
 
 	unsigned char *data()

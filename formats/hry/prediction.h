@@ -145,19 +145,12 @@ T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
        }
 }
 
-void printfloathex(float x)
-{
-	uint32_t y = *((uint32_t*)&x);
-	std::cout << std::hex << y << std::endl;
-}
-
-
 template <class T>
 T encodeDelta(const T raw, const T pred, const int bits, std::true_type)
 {
 	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
 	transform::int_t<sizeof(T)> rawint = transform::float2int(raw);
-	transform::uint_t<sizeof(T)> res = encodeDelta(/*(transform::uint_t<sizeof(T)>)*/int2uint<T>(rawint)/*^0x80000000*/, /*(transform::uint_t<sizeof(T)>)*/int2uint<T>(predint)/*^0x80000000*/, bits/*sizeof(T)<<3*/, std::false_type());
+	transform::uint_t<sizeof(T)> res = encodeDelta(int2uint<T>(rawint), int2uint<T>(predint), bits, std::false_type());
 	T r = *((T*)&res);
 
 	assert_eq(raw, decodeDelta(r, pred, bits));

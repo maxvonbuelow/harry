@@ -27,18 +27,17 @@ FileType get_mesh_type(const std::string &fn)
 	throw std::runtime_error("Unknown file extension");
 }
 
-template <typename H>
-void write(std::ostream &os, const std::string &fn, H &handle, FileType type = UNKNOWN)
+void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN)
 {
 	std::string dir = fn.substr(0, fn.find_last_of("/\\"));
 	type = type == UNKNOWN ? get_mesh_type(fn) : type;
 	switch (type)
 	{
 	case HRY:
-		hry::writer::write(os, handle);
+		hry::writer::write(os, mesh);
 		break;
 	case PLY:
-		ply::writer::write(os, handle);
+		ply::writer::write(os, mesh);
 		break;
 // 	case OBJ:
 // 		mesh_reader::obj::read(is, dir, builder, prog);
@@ -47,11 +46,10 @@ void write(std::ostream &os, const std::string &fn, H &handle, FileType type = U
 		throw std::runtime_error("Currently unimplemented");
 	}
 }
-template <typename H>
-void write(const std::string &fn, H &handle, FileType type = UNKNOWN)
+void write(const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN)
 {
 	std::ofstream os(fn, std::ofstream::binary);
-	write(os, fn, handle, type);
+	write(os, fn, mesh, type);
 }
 
 }

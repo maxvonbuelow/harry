@@ -192,10 +192,6 @@ struct Builder {
 		edgemap::iterator twin = em.find(edgemap_e(b, a));
 		if (twin != em.end()) { // found a twin, merge
 			c.fmerge(twin->second, p);
-			if (cur_f == twin->second.f()) {
-				std::cout << twin->second.e() << " " << cur_c - 1 << std::endl;
-				std::exit(1);
-			}
 			em.erase(twin);
 		} else {
 			em.insert(std::make_pair(edgemap_e(a, b), p));
