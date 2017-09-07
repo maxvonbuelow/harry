@@ -7,6 +7,7 @@
 
 #include "hry/writer.h"
 #include "ply/writer.h"
+#include "obj/writer.h"
 
 namespace unified {
 namespace writer {
@@ -39,9 +40,9 @@ void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType t
 	case PLY:
 		ply::writer::write(os, mesh, true);
 		break;
-// 	case OBJ:
-// 		mesh_reader::obj::read(is, dir, builder, prog);
-// 		break;
+	case OBJ:
+		obj::writer::write(os, dir, mesh);
+		break;
 	default:
 		throw std::runtime_error("Currently unimplemented");
 	}

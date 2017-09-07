@@ -8,6 +8,7 @@
 
 #include "hry/reader.h"
 #include "ply/reader.h"
+#include "obj/reader.h"
 
 namespace unified {
 namespace reader {
@@ -45,9 +46,9 @@ void read(std::istream &is, const std::string &fn, mesh::Mesh &mesh)
 	case PLY:
 		ply::reader::read(is, mesh);
 		break;
-// 	case OBJ:
-// 		mesh_reader::obj::read(is, dir, builder, prog);
-// 		break;
+	case OBJ:
+		obj::reader::read(is, dir, mesh);
+		break;
 	default:
 		throw std::runtime_error("Currently unimplemented");
 	}

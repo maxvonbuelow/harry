@@ -32,7 +32,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 
 # file(GLOB ba_SRC "*.h" "*.cc")
 
-add_executable(ba main.cc assert.cc formats/hry/reader.cc formats/hry/writer.cc formats/ply/reader.cc formats/ply/writer.cc inspect/glwidget.cc inspect/mainwindow.cc inspect/window.cc)
+add_executable(ba main.cc assert.cc formats/hry/reader.cc formats/hry/writer.cc formats/ply/reader.cc formats/ply/writer.cc formats/obj/reader.cc formats/obj/writer.cc inspect/glwidget.cc inspect/mainwindow.cc inspect/window.cc)
 # add_executable(plycat utils/plycat.cc)
 
 qt5_use_modules(ba Widgets OpenGL)
