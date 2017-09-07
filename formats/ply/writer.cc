@@ -129,6 +129,7 @@ void write(std::ostream &os, mesh::Mesh &mesh, bool ascii)
 	std::set<mesh::listidx_t> a, b, c, d;
 	std::set<mesh::listidx_t> *as_vtx = &a, *last_vtx = &b, *as_face = &c, *last_face = &d;
 	for (int i = 0; i < mesh.attrs.num_regs_vtx(); ++i) {
+// 		std::cout << mesh.attrs.num_bindings_vtx_reg(i) << std::endl;
 		for (int j = 0; j < mesh.attrs.num_bindings_vtx_reg(i); ++j) {
 			mesh::listidx_t as = mesh.attrs.binding_reg_vtxlist(i, j);
 			if (i == 0 || last_vtx->find(as) != last_vtx->end()) as_vtx->insert(as);

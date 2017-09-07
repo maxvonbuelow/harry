@@ -120,6 +120,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 	mesh::vtxidx_t vertexIdx = 0;
 	mesh::faceidx_t fop;
 	Perm perm(mesh.num_vtx());
+	std::cout << mesh.num_vtx() << " " << mesh.num_face() << " " << mesh.conn.num_face() << std::endl;
 	std::vector<int> order(mesh.num_vtx(), 0);
 	mesh::faceidx_t f;
 
@@ -374,6 +375,7 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 	} while (!tri.empty());
 	wr.end();
 	prog.end();
+// 	std::cout << "processed faces: " << f << " empty: " << tri.empty() << std::endl;
 
 	return CBMStats{ cutBorder.max_parts, cutBorder.max_elements, nm };
 }

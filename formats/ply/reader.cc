@@ -12,6 +12,7 @@
 #include "../../structs/mixing.h"
 #include "../../structs/types.h"
 #include "../../utils.h"
+#include "../../progress.h"
 
 namespace ply {
 namespace reader {
@@ -312,9 +313,15 @@ struct BinLEReader {
 template <typename R>
 void readloop(std::istream &is, const Header &header, const std::vector<int> *perms, mesh::Builder &builder, R &&read)
 {
+	progress::handle prog;
 	int face_idx = header["face"];
 	int vtx_idx = header["vertex"];
 	int vi_idx = header[face_idx]["vertex_indices"];
+	uint32_t cnt = 0, cur = 0;
+	for (int i = 0; i < header.size(); ++i) {
+		if (i == face_idx || i == vtx_idx) cnt += header[i].len;
+	}
+	prog.start(cnt);
 	for (int i = 0; i < header.size(); ++i) {
 		const Element &elem = header[i];
 		unsigned char ign[8];
@@ -345,6 +352,7 @@ void readloop(std::istream &is, const Header &header, const std::vector<int> *pe
 					}
 				}
 				builder.attr_finished(list, j);
+				prog(cur++);
 			}
 		} else {
 			// ignore unknown elements
@@ -359,6 +367,7 @@ void readloop(std::istream &is, const Header &header, const std::vector<int> *pe
 			}
 		}
 	}
+	prog.end();
 	builder.finished();
 }
 

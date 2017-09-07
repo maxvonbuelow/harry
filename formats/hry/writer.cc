@@ -56,7 +56,7 @@ struct HeaderWriter {
 			}
 		}
 		for (mesh::regidx_t r = 0; r < nrfv[1]; ++r) {
-			uint16_t nbv = mesh.attrs.num_bindings_face_reg(r);
+			uint16_t nbv = mesh.attrs.num_bindings_vtx_reg(r);
 			os.write((const char*)&nbv, 2);
 			for (mesh::listidx_t a = 0; a < nbv; ++a) {
 				uint16_t b = mesh.attrs.binding_reg_vtxlist(r, a);
@@ -149,7 +149,7 @@ void write(std::ostream &os, mesh::Mesh &mesh)
 #ifdef GUI
 	int argc = 0; char **argv;
 	QApplication app(argc, argv);
-	MainWindow *mainWindow = new MainWindow(mesh.num_edge());
+	MainWindow *mainWindow = new MainWindow(mesh.num_edge() + 1000);
 	mainWindow->resize(mainWindow->sizeHint());
 	mainWindow->show();
 	AssertMngr::set([&] { /*AssertMngr::keepalive();*/((Window*)mainWindow->centralWidget())->glWidget->paused = true; });

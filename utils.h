@@ -89,7 +89,7 @@ inline bool isdir(const char *path)
 	return filetype(path) == DIR;
 }
 
-inline std::streampos linenum_approx(std::istream &is, int quantiles = 100)
+inline std::streampos linenum_approx(std::istream &is, int samples = 100)
 {
 	is.seekg(0, std::ios::beg);
 	std::streampos beg = is.tellg();
@@ -98,8 +98,8 @@ inline std::streampos linenum_approx(std::istream &is, int quantiles = 100)
 	std::streampos diff = end - beg;
 
 	std::streampos sum = 0;
-	for (int i = 0; i < quantiles; ++i) {
-		std::streampos off = (diff * i + diff / 2) / quantiles;
+	for (int i = 0; i < samples; ++i) {
+		std::streampos off = (diff * i + diff / 2) / samples;
 		is.seekg(off, std::ios::beg);
 		skip_line(is);
 		std::streampos begline = is.tellg();
@@ -112,7 +112,7 @@ inline std::streampos linenum_approx(std::istream &is, int quantiles = 100)
 	is.clear();
 	is.seekg(0, std::ios::beg);
 
-	return diff / (sum / quantiles);
+	return diff / (sum / samples);
 }
 
 inline std::string join_path(const std::string &a, const std::string &b)
