@@ -147,9 +147,7 @@ BWD:
 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
 
 		curparal = 0;
-// 		std::cout << "sf1?" << std::endl;
 		tfan(e, r, v);
-// 		std::cout << "sf2?" << std::endl;
 		vtx_is_encoded[v] = true;
 		int num_paral = curparal;
 

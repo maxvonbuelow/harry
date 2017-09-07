@@ -100,6 +100,8 @@ struct CutBorder : CutBorderBase {
 	Element *emptyElements;
 	int max_elements, max_parts;
 
+	Data *last; // last added data
+
 // 	std::stack<int> swapped;
 	int swapped;
 	bool have_swap;
@@ -297,7 +299,7 @@ struct CutBorder : CutBorderBase {
 		}
 	}
 
-	Element *initial(Data v0, Data v1, Data v2)
+	void initial(Data v0, Data v1, Data v2)
 	{
 		part = parts;
 		Element *e0 = new_element(v0), *e1 = new_element(v1), *e2 = new_element(v2);
@@ -308,15 +310,12 @@ struct CutBorder : CutBorderBase {
 		next(e0, e2);
 
 		part->rootElement = element;
-
-		return e0;
 	}
-	template <typename ...Params>
-	void newVertex(Data v, Params &&...params)
+	void newVertex(Data v)
 	{
 		Element *v0 = element;
 		Element *v1 = new_element(v);
-		v1->data.init(std::forward<Params>(params)...);
+		last = &v1->data;
 		Element *v2 = element->next;
 
 		++part->nrEdges; // -1 + 2
@@ -434,8 +433,7 @@ struct CutBorder : CutBorderBase {
 		}
 	}
 
-	template <typename ...Params>
-	Data splitCutBorder(int i, Params &&...params)
+	Data splitCutBorder(int i)
 	{
 		int edgecnt;
 		Element *e0 = element, *e1 = get_element(edgecnt, i);
@@ -447,7 +445,7 @@ struct CutBorder : CutBorderBase {
 		e0->set_next(e1);
 
 		Element *split = new_element(e1->data);
-		split->data.init(std::forward<Params>(params)...);
+		last = &split->data;
 		newtail->set_next(split);
 		split->set_next(newroot);
 
@@ -486,8 +484,7 @@ struct CutBorder : CutBorderBase {
 
 		return e1->data;
 	}
-	template <typename ...Params>
-	Data cutBorderUnion(int i, int p, Params &&...params)
+	Data cutBorderUnion(int i, int p)
 	{
 		int edgecnt;
 		Element *e0 = element, *e1 = get_element(edgecnt, i, p);
@@ -498,7 +495,7 @@ struct CutBorder : CutBorderBase {
 		e0->set_next(e1);
 
 		Element *un = new_element(e1->data);
-		un->data.init(std::forward<Params>(params)...);
+		last = &un->data;
 		newtail->set_next(un);
 		un->set_next(newroot);
 
@@ -519,14 +516,13 @@ struct CutBorder : CutBorderBase {
 		return !!vertices[i];
 	}
 
-	template <typename ...Params>
-	void init(Element *e, Params &&...params)
-	{
-		e->data.init(std::forward<Params>(params)...);
-	}
+// 	template <typename ...Params>
+// 	void init(Element *e, Params &&...params)
+// 	{
+// 		e->data.init(std::forward<Params>(params)...);
+// 	}
 
-	template <typename ...Params>
-	bool findAndUpdate(Data v, int &i, int &p, OP &op, Params &&...params)
+	bool findAndUpdate(Data v, int &i, int &p, OP &op)
 	{
 		if (!on_cut_border(v.idx)) return false;
 		find_element(v, i, p);
@@ -534,7 +530,7 @@ struct CutBorder : CutBorderBase {
 
 		if (p > 0) {
 			op = UNION;
-			Data res = cutBorderUnion(i, p, std::forward<Params>(params)...);
+			Data res = cutBorderUnion(i, p);
 			assert_eq(res.idx, v.idx);
 		} else {
 			if (element->next->isEdgeBegin && element->next->next->data.idx == v.idx) {
@@ -549,7 +545,7 @@ struct CutBorder : CutBorderBase {
 				return false;
 			} else {
 				op = SPLIT;
-				Data res = splitCutBorder(i, std::forward<Params>(params)...);
+				Data res = splitCutBorder(i);
 				assert_eq(res.idx, v.idx);
 			}
 		}

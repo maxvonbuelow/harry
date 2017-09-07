@@ -37,7 +37,7 @@ void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType t
 		hry::writer::write(os, mesh);
 		break;
 	case PLY:
-		ply::writer::write(os, mesh);
+		ply::writer::write(os, mesh, true);
 		break;
 // 	case OBJ:
 // 		mesh_reader::obj::read(is, dir, builder, prog);

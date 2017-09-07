@@ -69,12 +69,12 @@ struct Attr : mixing::Array {
 			quant.resize(this->fmt().size(), 14);
 		}
 		caclulate_scale();
-		quantize(quant);
+// 		quantize(quant);
 	}
 	void finalize_rev()
 	{
 		caclulate_scale();
-		dequantize();
+// 		dequantize();
 	}
 	void finalize(std::size_t i)
 	{
@@ -147,6 +147,8 @@ struct Attr : mixing::Array {
 			mixing::View nf(this->data() + i * quantized_fmt.bytes(), quantized_fmt);
 			for (int j = 0; j < this->fmt().size(); ++j) {
 				if (!quantized_fmt.isquant(j)) {
+						std::cerr << "Unimplemented" << std::endl;
+						std::exit(1);
 					switch (this->fmt().stype(j)) {
 					case mixing::FLOAT:  nf.at<float>(j)    = cur.at<float>(j);    break;
 					case mixing::DOUBLE: nf.at<double>(j)   = cur.at<double>(j);   break;

@@ -122,6 +122,7 @@ T decodeDelta(const T delta, const T pred, const int q)
 template <class T>
 T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
 {
+// 	std::cout << bits << std::endl;
 // 	assert_eq(bits, 32);
 // 	bits=32;
        const T max_pos = mask<T>(bits) - pred;

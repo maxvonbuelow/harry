@@ -19,34 +19,33 @@
 struct Perm {
 	std::vector<int> perm;
 
-	Perm(int n) : perm(n, -1)
+	inline Perm(int n) : perm(n, -1)
 	{}
 
-	bool isMapped(int idx)
+	inline bool isMapped(int idx)
 	{
 		return perm[idx] != -1;
 	}
 
-	void map(int a, int b)
+	inline void map(int a, int b)
 	{
 		perm[a] = b;
 	}
-	void unmap(int a)
+	inline void unmap(int a)
 	{
 		perm[a] = -1;
 	}
-	int get(int idx)
+	inline int get(int idx)
 	{
 		return perm[idx];
 	}
 };
 
-struct EncoderData {
+struct CoderData {
 	mesh::conn::fepair a;
 	int vr;
-// 	AttrListElem *elems;
 
-	inline EncoderData() : a(INVALID_PAIR)
+	inline CoderData() : a(INVALID_PAIR)
 	{}
 
 	inline void init(mesh::conn::fepair _a, int _vr)
@@ -55,44 +54,68 @@ struct EncoderData {
 		vr = _vr;
 	}
 };
-inline std::ostream &operator<<(std::ostream &os, const EncoderData &v)
+inline std::ostream &operator<<(std::ostream &os, const CoderData &v)
 {
 	return os << v.a;
 }
+/*
+sequence element edge validness:
+
+seq_.. | frist |  mid  | last
+-------+-------+-------+------
+e0     |  YES  |       |
+e1     |  YES  |  YES  |  YES
+e2     |       |       |  YES
+*/
 
 struct CBMStats {
 	int used_parts, used_elements;
 	int nm;
 };
 
-inline mesh::conn::fepair chooseTriangle(std::unordered_set<mesh::faceidx_t> &remaining_faces)
-{
-	mesh::faceidx_t f = remaining_faces.find(0) == remaining_faces.end() ? *remaining_faces.begin() : 0;
-	mesh::conn::fepair a = mesh::conn::fepair(f, 0);
-	remaining_faces.erase(f);
-	return a;
-}
+struct Triangulator {
+	std::unordered_set<mesh::faceidx_t> remaining_faces;
+	const mesh::conn::Conn &conn;
 
-inline mesh::conn::fepair getVertexData(mesh::conn::Conn &conn, std::unordered_set<mesh::faceidx_t> &remaining_faces, mesh::conn::fepair i)
-{
-	mesh::conn::fepair a = conn.twin(i);
-	if (a == i) return INVALID_PAIR;
-	if (remaining_faces.find(a.f()) == remaining_faces.end()) return INVALID_PAIR; // this can happen on non manifold edges
-	remaining_faces.erase(a.f());
-	return a;
-}
+	inline Triangulator(const mesh::Mesh &mesh) : conn(mesh.conn)
+	{
+		for (mesh::faceidx_t i = 0; i < mesh.num_face(); ++i) {
+			remaining_faces.insert(i);
+		}
+	}
+
+	inline mesh::conn::fepair chooseTriangle()
+	{
+		mesh::faceidx_t f = remaining_faces.find(0) == remaining_faces.end() ? *remaining_faces.begin() : 0;
+		mesh::conn::fepair a = mesh::conn::fepair(f, 0);
+		remaining_faces.erase(f);
+		return a;
+	}
+
+	inline mesh::conn::fepair getVertexData(mesh::conn::fepair i)
+	{
+		mesh::conn::fepair a = conn.twin(i);
+		if (a == i) return INVALID_PAIR;
+		if (remaining_faces.find(a.f()) == remaining_faces.end()) return INVALID_PAIR; // this can happen on non manifold edges
+		remaining_faces.erase(a.f());
+		return a;
+	}
+
+	inline bool empty()
+	{
+		return remaining_faces.empty();
+	}
+};
+
 
 template <typename H, typename T, typename W, typename P>
 CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 {
 
-	typedef DataTpl<EncoderData> Data;
-	typedef ElementTpl<EncoderData> Element;
-	CutBorder<EncoderData> cutBorder(100 + 20000, 10 * std::sqrt(mesh.num_vtx()) + 10000000);
-	std::unordered_set<mesh::faceidx_t> remaining_faces;
-	for (mesh::faceidx_t i = 0; i < mesh.num_face(); ++i) {
-		remaining_faces.insert(i);
-	}
+	typedef DataTpl<CoderData> Data;
+	typedef ElementTpl<CoderData> Element;
+	CutBorder<CoderData> cutBorder(100 + 20000, 10 * std::sqrt(mesh.num_vtx()) + 10000000); // TODO: wrong assumption in CBM paper
+	Triangulator tri(mesh);
 
 	mesh::vtxidx_t vertexIdx = 0;
 	mesh::faceidx_t fop;
@@ -108,13 +131,14 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 	do {
 		Data v0, v1, v2, v2op;
 		curtri = 0;
-		e0 = chooseTriangle(remaining_faces); e1 = mesh.conn.enext(e0); e2 = mesh.conn.enext(e1);
+		e0 = tri.chooseTriangle(); e1 = mesh.conn.enext(e0); e2 = mesh.conn.enext(e1);
 		v0 = Data(mesh.conn.org(e0)); v1 = Data(mesh.conn.org(e1)); v2 = Data(mesh.conn.org(e2));
 		bool m0 = perm.isMapped(v0.idx), m1 = perm.isMapped(v1.idx), m2 = perm.isMapped(v2.idx);
 		f = mesh.conn.face(e0);
 		ntri = mesh.conn.num_edges(f) - 2;
 		assert_eq(ntri, 1);
 		CutBorderBase::INITOP initop;
+		nm += m0 + m1 + m2;
 		// Tri 3
 		if (m0 && m1 && m2) {
 			wr.tri111(ntri, perm.get(v0.idx), perm.get(v1.idx), perm.get(v2.idx));
@@ -122,7 +146,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 // 			ac.face(f, e0.e());
 // 			ac.vtx(f, e0.e());
 			initop = CutBorderBase::TRI111;
-			nm += 3;
 		}
 		// Tri 2
 		else if (m0 && m1) {
@@ -133,7 +156,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			assert_eq(mesh.conn.org(e2), v2.idx);
 			perm.map(v2.idx, vertexIdx++);
 			initop = CutBorderBase::TRI110;
-			nm += 2;
 		} else if (m1 && m2) {
 			wr.tri011(ntri, perm.get(v1.idx), perm.get(v2.idx));
 // 			ac.face(f);
@@ -142,7 +164,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			assert_eq(mesh.conn.org(e0), v0.idx);
 			perm.map(v0.idx, vertexIdx++);
 			initop = CutBorderBase::TRI011;
-			nm += 2;
 		} else if (m2 && m0) {
 			wr.tri101(ntri, perm.get(v2.idx), perm.get(v0.idx));
 // 			ac.face(f);
@@ -151,7 +172,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			assert_eq(mesh.conn.org(e1), v1.idx);
 			perm.map(v1.idx, vertexIdx++);
 			initop = CutBorderBase::TRI101;
-			nm += 2;
 		}
 		// Tri 1
 		else if (m0) {
@@ -164,7 +184,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			assert_eq(mesh.conn.org(e2), v2.idx);
 			perm.map(v1.idx, vertexIdx++); perm.map(v2.idx, vertexIdx++);
 			initop = CutBorderBase::TRI100;
-			++nm;
 		} else if (m1) {
 			wr.tri010(ntri, perm.get(v1.idx));
 // 			ac.face(f);
@@ -175,7 +194,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			assert_eq(mesh.conn.org(e0), v0.idx);
 			perm.map(v2.idx, vertexIdx++); perm.map(v0.idx, vertexIdx++);
 			initop = CutBorderBase::TRI010;
-			++nm;
 		} else if (m2) {
 			wr.tri001(ntri, perm.get(v2.idx));
 // 			ac.face(f);
@@ -186,7 +204,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			assert_eq(mesh.conn.org(e1), v1.idx);
 			perm.map(v0.idx, vertexIdx++); perm.map(v1.idx, vertexIdx++);
 			initop = CutBorderBase::TRI001;
-			++nm;
 		}
 		// Tri 0 = Initial
 		else {
@@ -206,53 +223,46 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 
 // 		ac.wedge(f, 0, v0.idx); ac.wedge(f, 1, v1.idx); ac.wedge(f, 2, v2.idx);
 
-// 		v0.a = e0; v1.a = e1; v2.a = e2;
-		Element *cbe0 = cutBorder.initial(v0, v1, v2); // CHECK 3 NEW VERTICES; 3 NEW EDGES
-		cutBorder.init(cbe0, e0, v2.idx);
-		cutBorder.init(cbe0->next, e1, v0.idx);
-		cutBorder.init(cbe0->next->next, ntri == 1 ? e2 : INVALID_PAIR, v1.idx);
+		v0.init(e0, v2.idx);
+		v1.init(e1, v0.idx);
+		v2.init(e2, v1.idx);
+		cutBorder.initial(v0, v1, v2);
+// 		cutBorder.init(cbe0->next->next, ntri == 1 ? e2 : INVALID_PAIR, v1.idx);
+
 
 		startedge = e0; curedge = e1;
 		lastfaceedge = e2;
 		++curtri;
 
 		while (!cutBorder.atEnd()) {
-			Data ign1, ign2;
-			Element *data_gate = cutBorder.traverseStep(ign1, ign2);
-			mesh::conn::fepair gate = data_gate->data.a;
-			mesh::conn::fepair gateedgeprev = data_gate->prev->data.a;
-			mesh::conn::fepair gateedgenext = data_gate->next->data.a;
-			bool nib = data_gate->next->isEdgeBegin;
-			bool pib = data_gate->prev->isEdgeBegin;
-// 			bool inner = gate == mesh::Mesh::INVALID_PAIR; TODO
-			bool inner = curtri != ntri;
-			if (!inner) {
-				v0 = Data(mesh.conn.org(gate));
-				v1 = Data(mesh.conn.dest(gate));
+			Element *elm_gate = cutBorder.traverseStep(v0, v1);
+			Data *data_gate = &elm_gate->data;
+			mesh::conn::fepair gate = data_gate->a;
+			mesh::conn::fepair gateedgeprev = elm_gate->prev->data.a;
+			mesh::conn::fepair gateedgenext = elm_gate->next->data.a;
+			bool seq_first = curtri == ntri;
+			if (seq_first) {
 				lastfaceedge = gate;
 
-				assert_eq(v0.idx, ign1.idx);
-				assert_eq(v1.idx, ign2.idx);
+				assert_eq(v0.idx, mesh.conn.org(gate));
+				assert_eq(v1.idx, mesh.conn.dest(gate));
 // 				v2op = Data(mesh.dest(mesh.enext(gate))); // TODO error here!!!
-				v2op = data_gate->data.vr;
+				v2op = data_gate->vr;
 
-				e0 = getVertexData(mesh.conn, remaining_faces, gate);
+				e0 = tri.getVertexData(gate);
 				startedge = e0;
 			} else {
-// 				assert_eq(gate, mesh::Mesh::INVALID_PAIR);
-				v0 = Data(mesh.conn.dest(curedge));
-				v1 = Data(mesh.conn.org(startedge));
-				assert_eq(v0.idx, ign1.idx);
-				assert_eq(v1.idx, ign2.idx);
+				assert_eq(v0.idx, mesh.conn.dest(curedge));
+				assert_eq(v1.idx, mesh.conn.org(startedge));
 // 				v2op = Data(mesh.org(curedge));
-				v2op = data_gate->data.vr;
+				v2op = data_gate->vr;
 				e0 = INVALID_PAIR;
 			}
 
 			wr.order(order[v1.idx]);
 
-			if (!inner && e0 == INVALID_PAIR) {
-				handle(f, curtri, ntri, v0.idx, v1.idx, v2op.idx, CutBorderBase::BORDER);
+			if (seq_first && e0 == INVALID_PAIR) {
+				handle(f, 0, ntri, v0.idx, v1.idx, v2op.idx, CutBorderBase::BORDER);
 				f = mesh.conn.face(gate);
 				CutBorderBase::OP bop = cutBorder.border();
 
@@ -261,16 +271,13 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 // 				bop = CutBorderBase::BORDER;
 				wr.border(bop);
 			} else {
-				bool lasttri;
-				if (!inner) {
+				if (seq_first) {
 					curtri = 0;
 					f = mesh.conn.face(e0);
 					fop = mesh.conn.face(gate);
 					ntri = mesh.conn.num_edges(f) - 2;
 
-					e1 = mesh.conn.enext(e0); e2 = mesh.conn.enext(e1);
-					lasttri = mesh.conn.enext(mesh.conn.enext(e1)) == startedge;
-					curedge = e1;
+					e1 = curedge = mesh.conn.enext(e0); e2 = mesh.conn.enext(e1);
 					
 					assert_eq(mesh.conn.org(e0), v1.idx);
 					assert_eq(mesh.conn.dest(e0), v0.idx);
@@ -280,79 +287,80 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 					fop = mesh.conn.face(lastfaceedge);
 
 					e1 = curedge = mesh.conn.enext(curedge);
-					lasttri = mesh.conn.enext(mesh.conn.enext(e1)) == startedge;
-					if (lasttri) e2 = mesh.conn.enext(e1); // TODO: use ints for if
-					else e2 = mesh.conn.enext(curedge); //mesh::Mesh::INVALID_PAIR;
+					e2 = mesh.conn.enext(e1);
 
 					v2 = Data(mesh.conn.dest(curedge));
 				}
+				bool seq_last = curtri + 1 == ntri;
+				bool seq_mid = !seq_first && !seq_last;
 
 				if (!perm.isMapped(v2.idx)) {
 					handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::ADDVTX);
-					cutBorder.newVertex(v2, e2, v0.idx);
-					cutBorder.init(data_gate, e1, v1.idx);
-					wr.newvertex(inner ? 0 : ntri); // TODO
-// 					if (!inner) ac.face(f);
-// 					if (!inner) ac.face(f, e0.e());
+					cutBorder.newVertex(v2);
+					cutBorder.last->init(e2, v0.idx);
+					data_gate->init(e1, v1.idx);
+					wr.newvertex(seq_first ? ntri : 0); // TODO
+// 					if (seq_first) ac.face(f);
+// 					if (seq_first) ac.face(f, e0.e());
 					ac.vtx(f, e2.e());
 					perm.map(v2.idx, vertexIdx++);
 				} else {
 					int i, p;
 					CutBorderBase::OP op;
-					bool succ = cutBorder.findAndUpdate(v2, i, p, op, e2, v0.idx);
+					bool succ = cutBorder.findAndUpdate(v2, i, p, op);
 					if (!succ) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::NM);
-						cutBorder.newVertex(v2, e2, v0.idx);
-						cutBorder.init(data_gate, e1, v1.idx);
-						wr.nm(inner ? 0 : ntri, perm.get(v2.idx));
-// 						if (!inner) ac.face(f, e0.e());
-// 						if (!inner) ac.face(f);
+						cutBorder.newVertex(v2);
+						cutBorder.last->init(e2, v0.idx);
+						data_gate->init(e1, v1.idx);
+						wr.nm(seq_first ? ntri : 0, perm.get(v2.idx));
+// 						if (seq_first) ac.face(f, e0.e());
+// 						if (seq_first) ac.face(f);
 						++nm;
 // 						e0 = mesh::Mesh::INVALID_PAIR;
 					} else if (op == CutBorderBase::UNION) {
+						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::UNION);
-						wr.cutborderunion(inner ? 0 : ntri, i, p);
-// 						if (!inner) ac.face(f, e0.e());
-// 						if (!inner) ac.face(f);
-						cutBorder.init(data_gate, e1, v1.idx);
+						wr.cutborderunion(seq_first ? ntri : 0, i, p);
+// 						if (seq_first) ac.face(f, e0.e());
+// 						if (seq_first) ac.face(f);
+						cutBorder.last->init(e2, v0.idx);
+						data_gate->init(e1, v1.idx);
 					} else if (op == CutBorderBase::CONNFWD || op == CutBorderBase::CLOSEFWD) {
+						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::CONNFWD);
 						if (mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
 						if (op == CutBorderBase::CLOSEFWD && mesh.conn.twin(gateedgeprev) != e1) mesh.conn.swap(gateedgeprev, e1);
-						wr.connectforward(inner ? 0 : ntri);
-// 						if (!inner) ac.face(f, e0.e());
-// 						if (!inner) ac.face(f);
-						cutBorder.init(data_gate, e1, v1.idx);
+						wr.connectforward(seq_first ? ntri : 0);
+// 						if (seq_first) ac.face(f, e0.e());
+// 						if (seq_first) ac.face(f);
+						data_gate->init(e1, v1.idx);
 					} else if (op == CutBorderBase::CONNBWD || op == CutBorderBase::CLOSEBWD) {
+						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::CONNBWD);
 						if (mesh.conn.twin(gateedgeprev) != e1) mesh.conn.swap(gateedgeprev, e1);
 						if (op == CutBorderBase::CLOSEBWD && mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
-						wr.connectbackward(inner ? 0 : ntri);
-// 						if (!inner) ac.face(f, e0.e());
-// 						if (!inner) ac.face(f);
-						cutBorder.init(data_gate, e2, v0.idx);
+						wr.connectbackward(seq_first ? ntri : 0);
+// 						if (seq_first) ac.face(f, e0.e());
+// 						if (seq_first) ac.face(f);
+						data_gate->init(e2, v0.idx);
 					} else {
+						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::SPLIT);
-						wr.splitcutborder(inner ? 0 : ntri, i);
-// 						if (!inner) ac.face(f, e0.e());
-// 						if (!inner) ac.face(f);
-						cutBorder.init(data_gate, e1, v1.idx);
+						wr.splitcutborder(seq_first ? ntri : 0, i);
+// 						if (seq_first) ac.face(f, e0.e());
+// 						if (seq_first) ac.face(f);
+						cutBorder.last->init(e2, v0.idx);
+						data_gate->init(e1, v1.idx);
 					}
-					assert_eq(curtri + 1 == ntri, lasttri); 
-					if (lasttri) cutBorder.preserveOrder();
+					assert_eq(curtri + 1 == ntri, seq_last); 
+					if (seq_last) cutBorder.preserveOrder();
 				}
-				Element *cur = data_gate;
-				do {
-					assert_eq(cur->prev->next, cur);
-					assert_eq(cur->next->prev, cur);
-					if (!cur->isEdgeBegin) continue;
-					assert_eq(cur->data.idx, mesh.conn.org(cur->data.a));
-				} while (cur != data_gate);
 
 				++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
 
 
-				if (!inner) {
+				if (seq_first) {
 // 					ac.wedge(f, 0, v1.idx); ac.wedge(f, 1, v0.idx); ac.wedge(f, 2, v2.idx);
 				} else {
 // 					ac.wedge(f, curtri + 2, /* mesh.org(f, curtri + 2)*/v2.idx);
@@ -363,26 +371,11 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 
 			prog(vertexIdx);
 		}
-	} while (!remaining_faces.empty());
+	} while (!tri.empty());
 	wr.end();
 	prog.end();
 
 	return CBMStats{ cutBorder.max_parts, cutBorder.max_elements, nm };
-}
-
-struct DecoderData {
-	mesh::conn::fepair a;
-	mesh::vtxidx_t vr;
-
-	inline void init(mesh::conn::fepair _a, int _vr)
-	{
-		a = _a;
-		vr = _vr;
-	}
-};
-inline std::ostream &operator<<(std::ostream &os, const DecoderData &v)
-{
-	return os << v.vr;
 }
 
 template <typename R, typename P>
@@ -390,12 +383,12 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 {
 	builder.noautomerge();
 
-	typedef DataTpl<DecoderData> Data;
-	typedef ElementTpl<DecoderData> Element;
+	typedef DataTpl<CoderData> Data;
+	typedef ElementTpl<CoderData> Element;
 
 	int nm = 0;
 
-	CutBorder<DecoderData> cutBorder(100 + 20000, 10 * sqrt(builder.num_vtx()) + 10000000);
+	CutBorder<CoderData> cutBorder(100 + 20000, 10 * sqrt(builder.num_vtx()) + 10000000);
 	std::vector<int> order(builder.num_vtx(), 0);
 
 	int vertexIdx = 0;
@@ -405,6 +398,7 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 	prog.start(builder.num_vtx());
 
 	int curtri, ntri;
+	mesh::conn::fepair startedge, curedge, lastfaceedge;
 	do {
 		Data v0, v1, v2;
 		CutBorderBase::INITOP initop = rd.iop();
@@ -470,67 +464,64 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 			break;
 		}
 
-		v0.vr = v2.idx; v1.vr = v0.idx; v2.vr = v1.idx; // TODO
 		mesh::conn::fepair e0(f, 0), e1(f, 1), e2(f, 2);
+		v0.init(e0, v2.idx);
+		v1.init(e1, v0.idx);
+		v2.init(e2, v1.idx);
+
 		assert_eq(builder.mesh.conn.org(e0), v0.idx);
 		assert_eq(builder.mesh.conn.org(e1), v1.idx);
 		assert_eq(builder.mesh.conn.org(e2), v2.idx);
-		v0.a = e0; v1.a = e1; v2.a = e2;
 		cutBorder.initial(v0, v1, v2);
 
 		if (curtri == ntri) ++f;
 
+		startedge = e0; curedge = e1;
+		lastfaceedge = e2;
+
 		while (!cutBorder.atEnd()) {
-			Element *data_gate = cutBorder.traverseStep(v0, v1);
-			mesh::vtxidx_t gatevr = data_gate->data.vr;
-			mesh::conn::fepair gateedge = data_gate->data.a;
-			mesh::conn::fepair gateedgeprev = data_gate->prev->data.a;
-			mesh::conn::fepair gateedgenext = data_gate->next->data.a;
-// 			mesh::faceidx_t gateface = /*gateedge.f()*/data_gate->data.f;
+			Element *elm_gate = cutBorder.traverseStep(v0, v1);
+			Data *data_gate = &elm_gate->data;
+			mesh::vtxidx_t gatevr = data_gate->vr;
+			mesh::conn::fepair gateedge = data_gate->a;
+			mesh::conn::fepair gateedgeprev = elm_gate->prev->data.a;
+			mesh::conn::fepair gateedgenext = elm_gate->next->data.a;
+// 			mesh::faceidx_t gateface = /*gateedge.f()*/data_gate->f;
 
 			rd.order(order[v1.idx]);
 
 			CutBorderBase::OP op = rd.op(), realop;
 
-			bool inner = curtri != ntri;
-
-			if (!inner) {
-				e0 = mesh::conn::fepair(f, 0); e1 = mesh::conn::fepair(f, 1); e2 = mesh::conn::fepair(f, 2);
-			} else {
-				// TODO
-				assert(0);
-			}
+			bool seq_first = curtri == ntri;
 
 			switch (op) {
 			case CutBorderBase::CONNFWD:
+				assert(seq_last);
 				v2 = cutBorder.connectForward(realop); // TODO: add border to realop
-				if (!v2.isUndefined()) cutBorder.init(data_gate, e1, v1.idx);
 				break;
 			case CutBorderBase::CONNBWD:
+				assert(seq_last);
 				v2 = cutBorder.connectBackward(realop); // TODO: add border to realop
-				if (!v2.isUndefined()) cutBorder.init(data_gate, e2, v0.idx);
 				break;
 			case CutBorderBase::SPLIT:
+				assert(seq_last);
 				i = rd.elem();
-				v2 = cutBorder.splitCutBorder(i, e2, v0.idx);
-				cutBorder.init(data_gate, e1, v1.idx);
+				v2 = cutBorder.splitCutBorder(i);
 				break;
 			case CutBorderBase::UNION:
+				assert(seq_last);
 				i = rd.elem();
 				p = rd.part();
-				v2 = cutBorder.cutBorderUnion(i, p, e2, v0.idx);
-				cutBorder.init(data_gate, e1, v1.idx);
+				v2 = cutBorder.cutBorderUnion(i, p);
 				break;
 			case CutBorderBase::ADDVTX:
 				v2 = Data(vertexIdx++);
 				assert_eq(i0, v2.idx);
-				cutBorder.newVertex(v2, e2, v0.idx);
-				cutBorder.init(data_gate, e1, v1.idx);
+				cutBorder.newVertex(v2);
 				break;
 			case CutBorderBase::NM:
 				v2.idx = rd.vertid();
-				cutBorder.newVertex(v2, e2, v0.idx);
-				cutBorder.init(data_gate, e1, v1.idx);
+				cutBorder.newVertex(v2);
 				++nm;
 				break;
 			case CutBorderBase::BORDER:
@@ -541,36 +532,61 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 			}
 
 			if (!v2.isUndefined()) {
-				if (!inner) {
+				if (seq_first) {
 					ntri = rd.numtri();
 					curtri = 0;
 					builder.face_begin(ntri + 2);
 					builder.set_org(v1.idx);
 					builder.set_org(v0.idx);
 					builder.set_org(v2.idx);
+					e0 = mesh::conn::fepair(f, 0); e1 = curedge = mesh::conn::fepair(f, 1); e2 = mesh::conn::fepair(f, 2);
 				} else {
 					builder.set_org(v2.idx);
+					e0 = INVALID_PAIR;
+					e1 = curedge = builder.mesh.conn.enext(curedge);
+					e2 = builder.mesh.conn.enext(e1);
 				}
+				bool seq_last = curtri + 1 == ntri;
+				bool seq_mid = !seq_first && !seq_last;
 				assert_eq(builder.builder_conn.cur_f, f);
+
+				switch (op) {
+				case CutBorderBase::CONNFWD:
+					data_gate->init(e1, v1.idx);
+					break;
+				case CutBorderBase::CONNBWD:
+					data_gate->init(e2, v0.idx);
+					break;
+				case CutBorderBase::SPLIT:
+				case CutBorderBase::UNION:
+				case CutBorderBase::ADDVTX:
+				case CutBorderBase::NM:
+					cutBorder.last->init(e2, v0.idx);
+					data_gate->init(e1, v1.idx);
+					break;
+				}
 
 				++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
 
-// 				if (!inner) {
+// 				if (seq_first) {
 // 					ac.wedge(f, 0, v1.idx); ac.wedge(f, 1, v0.idx); ac.wedge(f, 2, v2.idx);
 // 				} else {
 // 					ac.wedge(f, curtri + 2, v2.idx);
 // 				}
 				if (op == CutBorderBase::ADDVTX) ac.vtx(f, curtri + 2);
 				++curtri;
-				if (curtri == ntri) {
+				if (seq_last) {
 					builder.face_end();
 					cutBorder.preserveOrder();
 					++f;
 				}
 
-				assert_eq(builder.mesh.conn.twin(gateedge), gateedge);
-				assert_eq(builder.mesh.conn.twin(e0), e0);
-				builder.mesh.conn.fmerge(gateedge, e0);
+				if (seq_first) {
+					assert_eq(builder.mesh.conn.twin(gateedge), gateedge);
+					assert_eq(builder.mesh.conn.twin(e0), e0);
+					builder.mesh.conn.fmerge(gateedge, e0);
+				}
+
 				switch (op) {
 				case CutBorderBase::CONNFWD:
 					assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
