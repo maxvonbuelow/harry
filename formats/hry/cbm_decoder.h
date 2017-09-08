@@ -99,9 +99,9 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 		}
 
 		mesh::conn::fepair e0(f, 0), e1(f, 1), e2(f, 2);
-		v0.init(e0, v2.idx);
-		v1.init(e1, v0.idx);
-		v2.init(e2, v1.idx);
+		v0.init(e0);
+		v1.init(e1);
+		v2.init(e2);
 
 		assert_eq(builder.mesh.conn.org(e0), v0.idx);
 		assert_eq(builder.mesh.conn.org(e1), v1.idx);
@@ -116,7 +116,6 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 		while (!cutBorder.atEnd()) {
 			Element *elm_gate = cutBorder.traverseStep(v0, v1);
 			Data *data_gate = &elm_gate->data;
-			mesh::vtxidx_t gatevr = data_gate->vr;
 			mesh::conn::fepair gateedge = data_gate->a;
 			mesh::conn::fepair gateedgeprev = elm_gate->prev->data.a;
 			mesh::conn::fepair gateedgenext = elm_gate->next->data.a;
@@ -130,27 +129,22 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 
 			switch (op) {
 			case CutBorderBase::CONNFWD:
-				assert(seq_last);
 				v2 = cutBorder.connectForward(realop); // TODO: add border to realop
 				break;
 			case CutBorderBase::CONNBWD:
-				assert(seq_last);
 				v2 = cutBorder.connectBackward(realop); // TODO: add border to realop
 				break;
 			case CutBorderBase::SPLIT:
-				assert(seq_last);
 				i = rd.elem();
 				v2 = cutBorder.splitCutBorder(i);
 				break;
 			case CutBorderBase::UNION:
-				assert(seq_last);
 				i = rd.elem();
 				p = rd.part();
 				v2 = cutBorder.cutBorderUnion(i, p);
 				break;
 			case CutBorderBase::ADDVTX:
 				v2 = Data(vertexIdx++);
-				assert_eq(i0, v2.idx);
 				cutBorder.newVertex(v2);
 				break;
 			case CutBorderBase::NM:
@@ -186,17 +180,17 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 
 				switch (op) {
 				case CutBorderBase::CONNFWD:
-					data_gate->init(e1, v1.idx);
+					data_gate->init(e1);
 					break;
 				case CutBorderBase::CONNBWD:
-					data_gate->init(e2, v0.idx);
+					data_gate->init(e2);
 					break;
 				case CutBorderBase::SPLIT:
 				case CutBorderBase::UNION:
 				case CutBorderBase::ADDVTX:
 				case CutBorderBase::NM:
-					cutBorder.last->init(e2, v0.idx);
-					data_gate->init(e1, v1.idx);
+					cutBorder.last->init(e2);
+					data_gate->init(e1);
 					break;
 				}
 
@@ -223,9 +217,11 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 
 				switch (op) {
 				case CutBorderBase::CONNFWD:
-					assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
-					assert_eq(builder.mesh.conn.twin(e2), e2);
-					builder.mesh.conn.fmerge(gateedgenext, e2);
+					if (seq_last) {
+						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
+						assert_eq(builder.mesh.conn.twin(e2), e2);
+						builder.mesh.conn.fmerge(gateedgenext, e2);
+					}
 
 					if (realop == CutBorderBase::CLOSEFWD) {
 						assert_eq(builder.mesh.conn.twin(gateedgeprev), gateedgeprev);
@@ -238,7 +234,7 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 					assert_eq(builder.mesh.conn.twin(e1), e1);
 					builder.mesh.conn.fmerge(gateedgeprev, e1);
 
-					if (realop == CutBorderBase::CLOSEBWD) {
+					if (seq_last && realop == CutBorderBase::CLOSEBWD) {
 						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
 						assert_eq(builder.mesh.conn.twin(e2), e2);
 						builder.mesh.conn.fmerge(gateedgenext, e2);

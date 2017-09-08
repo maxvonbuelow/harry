@@ -199,7 +199,6 @@ struct Builder {
 	}
 	inline faceidx_t face_begin(ledgeidx_t ne)
 	{
-		assert_eq(ne, 3);
 		cur_f = c.add_face(ne);
 		cur_c = 0;
 		last_vtx = std::numeric_limits<vtxidx_t>::max();

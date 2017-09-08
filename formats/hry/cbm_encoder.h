@@ -102,7 +102,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 		bool m0 = perm.isMapped(v0.idx), m1 = perm.isMapped(v1.idx), m2 = perm.isMapped(v2.idx);
 		f = mesh.conn.face(e0);
 		ntri = mesh.conn.num_edges(f) - 2;
-		assert_eq(ntri, 1);
 		CutBorderBase::INITOP initop;
 		nm += m0 + m1 + m2;
 		// Tri 3
@@ -189,12 +188,11 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 
 // 		ac.wedge(f, 0, v0.idx); ac.wedge(f, 1, v1.idx); ac.wedge(f, 2, v2.idx);
 
-		v0.init(e0, v2.idx);
-		v1.init(e1, v0.idx);
-		v2.init(e2, v1.idx);
+		v0.init(e0);
+		v1.init(e1);
+		v2.init(e2);
 		cutBorder.initial(v0, v1, v2);
 // 		cutBorder.init(cbe0->next->next, ntri == 1 ? e2 : INVALID_PAIR, v1.idx);
-
 
 		startedge = e0; curedge = e1;
 		lastfaceedge = e2;
@@ -212,23 +210,19 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 
 				assert_eq(v0.idx, mesh.conn.org(gate));
 				assert_eq(v1.idx, mesh.conn.dest(gate));
-// 				v2op = Data(mesh.dest(mesh.enext(gate))); // TODO error here!!!
-				v2op = data_gate->vr;
 
 				e0 = tri.getVertexData(gate);
 				startedge = e0;
 			} else {
 				assert_eq(v0.idx, mesh.conn.dest(curedge));
 				assert_eq(v1.idx, mesh.conn.org(startedge));
-// 				v2op = Data(mesh.org(curedge));
-				v2op = data_gate->vr;
 				e0 = INVALID_PAIR;
 			}
 
 			wr.order(order[v1.idx]);
 
 			if (seq_first && e0 == INVALID_PAIR) {
-				handle(f, 0, ntri, v0.idx, v1.idx, v2op.idx, CutBorderBase::BORDER);
+				handle(f, 0, ntri, v0.idx, v1.idx, mesh.conn.org(mesh.conn.enext(mesh.conn.enext(gate))), CutBorderBase::BORDER);
 				f = mesh.conn.face(gate);
 				CutBorderBase::OP bop = cutBorder.border();
 
@@ -263,8 +257,8 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 				if (!perm.isMapped(v2.idx)) {
 					handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::ADDVTX);
 					cutBorder.newVertex(v2);
-					cutBorder.last->init(e2, v0.idx);
-					data_gate->init(e1, v1.idx);
+					cutBorder.last->init(e2);
+					data_gate->init(e1);
 					wr.newvertex(seq_first ? ntri : 0); // TODO
 // 					if (seq_first) ac.face(f);
 // 					if (seq_first) ac.face(f, e0.e());
@@ -277,47 +271,43 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 					if (!succ) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::NM);
 						cutBorder.newVertex(v2);
-						cutBorder.last->init(e2, v0.idx);
-						data_gate->init(e1, v1.idx);
+						cutBorder.last->init(e2);
+						data_gate->init(e1);
 						wr.nm(seq_first ? ntri : 0, perm.get(v2.idx));
 // 						if (seq_first) ac.face(f, e0.e());
 // 						if (seq_first) ac.face(f);
 						++nm;
 // 						e0 = mesh::Mesh::INVALID_PAIR;
 					} else if (op == CutBorderBase::UNION) {
-						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::UNION);
 						wr.cutborderunion(seq_first ? ntri : 0, i, p);
 // 						if (seq_first) ac.face(f, e0.e());
 // 						if (seq_first) ac.face(f);
-						cutBorder.last->init(e2, v0.idx);
-						data_gate->init(e1, v1.idx);
+						cutBorder.last->init(e2);
+						data_gate->init(e1);
 					} else if (op == CutBorderBase::CONNFWD || op == CutBorderBase::CLOSEFWD) {
-						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::CONNFWD);
-						if (mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
+						if (seq_last && mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
 						if (op == CutBorderBase::CLOSEFWD && mesh.conn.twin(gateedgeprev) != e1) mesh.conn.swap(gateedgeprev, e1);
 						wr.connectforward(seq_first ? ntri : 0);
 // 						if (seq_first) ac.face(f, e0.e());
 // 						if (seq_first) ac.face(f);
-						data_gate->init(e1, v1.idx);
+						data_gate->init(e1);
 					} else if (op == CutBorderBase::CONNBWD || op == CutBorderBase::CLOSEBWD) {
-						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::CONNBWD);
 						if (mesh.conn.twin(gateedgeprev) != e1) mesh.conn.swap(gateedgeprev, e1);
-						if (op == CutBorderBase::CLOSEBWD && mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
+						if (seq_last && op == CutBorderBase::CLOSEBWD && mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
 						wr.connectbackward(seq_first ? ntri : 0);
 // 						if (seq_first) ac.face(f, e0.e());
 // 						if (seq_first) ac.face(f);
-						data_gate->init(e2, v0.idx);
+						data_gate->init(e2);
 					} else {
-						assert(seq_last);
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CutBorderBase::SPLIT);
 						wr.splitcutborder(seq_first ? ntri : 0, i);
 // 						if (seq_first) ac.face(f, e0.e());
 // 						if (seq_first) ac.face(f);
-						cutBorder.last->init(e2, v0.idx);
-						data_gate->init(e1, v1.idx);
+						cutBorder.last->init(e2);
+						data_gate->init(e1);
 					}
 					assert_eq(curtri + 1 == ntri, seq_last); 
 					if (seq_last) cutBorder.preserveOrder();
@@ -340,7 +330,6 @@ CBMStats encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 	} while (!tri.empty());
 	wr.end();
 	prog.end();
-// 	std::cout << "processed faces: " << f << " empty: " << tri.empty() << std::endl;
 
 	return CBMStats{ cutBorder.max_parts, cutBorder.max_elements, nm };
 } 

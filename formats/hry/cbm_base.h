@@ -7,15 +7,13 @@
 
 struct CoderData {
 	mesh::conn::fepair a;
-	int vr;
 
 	inline CoderData() : a(INVALID_PAIR)
 	{}
 
-	inline void init(mesh::conn::fepair _a, int _vr)
+	inline void init(mesh::conn::fepair _a)
 	{
 		a = _a;
-		vr = _vr;
 	}
 };
 inline std::ostream &operator<<(std::ostream &os, const CoderData &v)
