@@ -174,6 +174,11 @@ struct Interps {
 		if (nameid < 0) return "";
 		return names[nameid];
 	}
+
+	bool has(int i) const
+	{
+		return i < size() && len(i) != 0;
+	}
 };
 
 struct View {

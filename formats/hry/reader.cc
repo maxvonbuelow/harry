@@ -1,6 +1,6 @@
 #include "reader.h"
 
-#include "cutbordermashine.h"
+#include "cbm_decoder.h"
 #include "io.h"
 #include "../../progress.h"
 

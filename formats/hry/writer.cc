@@ -10,7 +10,7 @@
 #include <QSurfaceFormat>
 #endif
 
-#include "cutbordermashine.h"
+#include "cbm_encoder.h"
 #include "io.h"
 #include "../../progress.h"
 #include "../../gui.h"

@@ -161,7 +161,6 @@ struct ModelVector : std::vector<arith::Model<TF>*>
 	void dec(arith::Decoder<TF> &coder, mixing::View v)
 	{
 		for (int i = 0; i < fmt.size(); ++i) {
-// 			std::cout << "cur type: " << i << std::endl;
 			(*this)[i]->dec(coder, v.data(i), v.bytes(i));
 		}
 	}
@@ -182,7 +181,6 @@ struct HryModels {
 		conn_numtri(false), conn_regface(false), conn_regvtx(false)
 	{
 		for (int i = 0; i < mesh.attrs.size(); ++i) {
-// 			std::cout << "ALLOC " << mesh.attrs[i].fmt().size() << " " << mesh.attrs[i].fmt().bytes() << std::endl;
 			attr_data.push_back(new ModelVector<arith::AdaptiveStatisticsModule<>>(mesh.attrs[i].fmt()));
 		}
 

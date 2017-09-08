@@ -369,64 +369,6 @@ struct AttrDecoder : AbsAttrCoder {
 		prog.end();
 	}
 
-// 
-// 	void vtx(vtxidx_t v)
-// 	{
-// 		regidx_t rv = attrs.vtx2reg(v) = rd.reg_vtx();
-// 		attrs.add_vtx();
-// 		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
-// 			ref_t as = attrs.binding_vtx(rv, a);
-// 			ref_t attridx;
-// 			switch (rd.attr_type(as)) {
-// 			case DATA:
-// 				attridx = cur_idx[as]++;
-// 				rd.vtxabs(attrs[as][attridx], as);
-// 				break;
-// 			case HIST:
-// 				attridx = rd.vtxhist(as);
-// 				break;
-// 			default:
-// 				// TODO: error
-// 				;
-// 			}
-// 			attrs.attr_vtx(v, a) = attridx;
-// 		}
-// 	}
-// 	void vtx(vtxidx_t v, vtxidx_t l, vtxidx_t r, vtxidx_t o)
-// 	{
-// 		regidx_t rv = attrs.vtx2reg(v) = rd.reg_vtx(), rl = attrs.vtx2reg(l), rr = attrs.vtx2reg(r), ro = attrs.vtx2reg(o);
-// 		attrs.add_vtx();
-// // 			std::cout << "YOOOO---" << std::endl;
-// 		for (offset_t a = 0; a < attrs.num_attr_vtx(rv); ++a) {
-// 			ref_t as = attrs.binding_vtx(rv, a);
-// 			ref_t attridx;
-// // 			std::cout << "YOOOO" << std::endl;
-// 			switch (rd.attr_type(as)) {
-// 			case DATA: {
-// 				attridx = cur_idx[as]++;
-// 				MElm ev = attrs[as][attridx];
-// 				if (rv == rl && rv == rr && rv == ro) {
-// 					// same regions: use parallelogramm
-// 					MElm el = attrs[as][attrs.attr_vtx(l, a)], er = attrs[as][attrs.attr_vtx(r, a)], eo = attrs[as][attrs.attr_vtx(o, a)];
-// 					rd.vtxparal(ev, as);
-// // 					ev.set([] (auto e0v, auto e1v, auto vtv, auto err) { return int2float_all(uadd(err, float2int_all(add64(e1v, sub64(e0v, vtv)), sizeof(err) << 3))); }
-// 					ev.setq([] (uint8_t q, auto e0v, auto e1v, auto vtv, auto err) { return pred::decode(err, e0v, e1v, vtv, q); }, el, er, eo, ev);
-// 				} else {
-// 					// different regions
-// 					rd.vtxabs(ev, as);
-// 				}
-// 				break;}
-// 			case HIST:
-// 				attridx = rd.vtxhist(as);
-// 				break;
-// 			default:
-// 				// TODO: error
-// 				;
-// 			}
-// 			attrs.attr_vtx(v, a) = attridx;
-// 		}
-// 
-// 	}
 // 	void face(faceidx_t f, ledgeidx_t ne)
 // 	{
 // 		regidx_t rf = attrs.face2reg(f) = rd.reg_face();

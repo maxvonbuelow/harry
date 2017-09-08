@@ -112,22 +112,17 @@ struct OBJReader {
 	}
 	void face(bool has_v, int *vi, bool has_t, int *ti, bool has_n, int *ni, int corners)
 	{
-// 		std::cout << "sf1?" << std::endl;
 		if (!has_v) throw std::runtime_error("Face has no vertex index; required for connectivity");
 		mesh::listidx_t tex_l = IL, normal_l = IL;
 
-// 		std::cout << "sf2?" << std::endl;
 		if (has_t) tex_l = tex_loc[ti[0]].first;
 		if (has_n) normal_l = normal_loc[ni[0]].first;
 
-// 		std::cout << "sf3?" << std::endl;
 		for (int c = 1; c < corners; ++c) {
-// 			std::cout << ti[c] << std::endl;
 			if (has_t && tex_loc[ti[c]].first != tex_l) throw std::runtime_error("Inconsistent texture attribute types in face");
 			if (has_n && normal_loc[ni[c]].first != normal_l) throw std::runtime_error("Inconsistent normal attribute types in face");
 		}
 
-// 		std::cout << "sf4?" << std::endl;
 		int reglookup = (tex_l << 3) | normal_l;
 		mesh::regidx_t r = face_reg[reglookup];
 		mesh::listidx_t num_attrs = (mesh::listidx_t)has_t + (mesh::listidx_t)has_n;
@@ -138,7 +133,6 @@ struct OBJReader {
 			if (has_n) builder.bind_reg_cornerlist(r, normal_a, normal_l);
 		}
 
-// 		std::cout << "sf5?" << std::endl;
 		// add face
 		mesh::faceidx_t fidx = builder.alloc_face(1, corners);
 		builder.face_reg(fidx, r);
@@ -149,14 +143,9 @@ struct OBJReader {
 			if (has_n) builder.bind_corner_attr(fidx, i, normal_a, normal_loc[ni[i]].second);
 		}
 		builder.face_end();
-// 		std::cout << "sf6?" << std::endl;
 	}
 
 	// reader
-	bool isdelim(char c)
-	{
-		return c == ' ' || c == '\t';
-	}
 	void read_obj(std::istream &is, const std::string &dir)
 	{
 		progress::handle prog;
@@ -172,206 +161,6 @@ struct OBJReader {
 		is >> std::noskipws;
 
 		uint32_t line = 0;
-// #define FSM
-#ifdef FSM
-		enum State { INIT, IGN, V, M, U, S, O, G, F, VT, VN, MT, MTL, MTLL, MTLLI, MTLLIB, US, USE, USEM, USEMT, USEMTL, VTX_INIT, TEX_INIT, NORM_INIT, FACE_INIT, SMOOTH_INIT, OBJ_INIT, GRP_INIT, MTL_INIT, USE_INIT, S_FACE, S_GRP, S_MTL, S_NORM, S_OBJ, S_SMOOTH, S_TEX, S_USE, S_VTX };
-		State state = INIT;
-		while (!is.eof()) {
-			char c = is.get();
-			switch (state) {
-			case INIT:
-				prog(line++);
-				if (c == '\n') state = INIT;
-				else if (c == 'v') state = V;
-				else if (c == 'm') state = M;
-				else if (c == 'u') state = U;
-				else if (c == 's') state = S;
-				else if (c == 'o') state = O;
-				else if (c == 'g') state = G;
-				else if (c == 'f') state = F;
-				else state = IGN;
-				break;
-			case IGN:
-				if (c == '\n') state = INIT;
-				break;
-			case V:
-				if (isdelim(c)) state = VTX_INIT;
-				else if (c == 't') state = VT;
-				else if (c == 'n') state = VN;
-				else state = IGN;
-				break;
-			case VT:
-				if (isdelim(c)) state = TEX_INIT;
-				else state = IGN;
-				break;
-			case VN:
-				if (isdelim(c)) state = NORM_INIT;
-				else state = IGN;
-				break;
-			case F:
-				if (isdelim(c)) state = FACE_INIT;
-				else state = IGN;
-				break;
-			case S:
-				if (isdelim(c)) state = SMOOTH_INIT;
-				else state = IGN;
-				break;
-			case O:
-				if (isdelim(c)) state = OBJ_INIT;
-				else state = IGN;
-				break;
-			case G:
-				if (isdelim(c)) state = GRP_INIT;
-				else state = IGN;
-				break;
-			case M:
-				if (c == 't') state = MT;
-				else state = IGN;
-				break;
-			case MT:
-				if (c == 'l') state = MTL;
-				else state = IGN;
-				break;
-			case MTL:
-				if (c == 'l') state = MTLL;
-				else state = IGN;
-				break;
-			case MTLL:
-				if (c == 'i') state = MTLLI;
-				else state = IGN;
-				break;
-			case MTLLI:
-				if (c == 'b') state = MTLLIB;
-				else state = IGN;
-				break;
-			case MTLLIB:
-				if (isdelim(c)) state = MTL_INIT;
-				else state = IGN;
-				break;
-			case U:
-				if (c == 's') state = US;
-				else state = IGN;
-				break;
-			case US:
-				if (c == 'e') state = USE;
-				else state = IGN;
-				break;
-			case USE:
-				if (c == 'm') state = USEM;
-				else state = IGN;
-				break;
-			case USEM:
-				if (c == 't') state = USEMT;
-				else state = IGN;
-				break;
-			case USEMT:
-				if (c == 'l') state = USEMTL;
-				else state = IGN;
-				break;
-			case USEMTL:
-				if (c == 's') state = USE_INIT;
-				else state = IGN;
-				break;
-
-			case VTX_INIT:
-				if (!isdelim(c)) state = S_VTX;
-				break;
-			case TEX_INIT:
-				if (!isdelim(c)) state = S_TEX;
-				break;
-			case NORM_INIT:
-				if (!isdelim(c)) state = S_NORM;
-				break;
-			case FACE_INIT:
-				if (!isdelim(c)) state = S_FACE;
-				break;
-			case SMOOTH_INIT:
-				if (!isdelim(c)) state = S_SMOOTH;
-				break;
-			case OBJ_INIT:
-				if (!isdelim(c)) state = S_OBJ;
-				break;
-			case GRP_INIT:
-				if (!isdelim(c)) state = S_GRP;
-				break;
-			case MTL_INIT:
-				if (!isdelim(c)) state = S_MTL;
-				break;
-			case USE_INIT:
-				if (!isdelim(c)) state = S_USE;
-				break;
-
-			case S_MTL:
-				util::getline(is, name);
-				mtllibs.push_back(name);
-				state = INIT;
-				break;
-			case S_USE:
-				util::getline(is, name);
-				usemtl(name);
-				state = INIT;
-				break;
-			case S_SMOOTH:
-				util::getline(is, name);
-				smoothgroup(name);
-				state = INIT;
-				break;
-			case S_OBJ:
-				util::getline(is, name);
-				object(name);
-				state = INIT;
-				break;
-			case S_GRP:
-				util::getline(is, name);
-				group(name);
-				state = INIT;
-				break;
-			case S_VTX: {
-				++vi[VERTEX];
-				int cnt = util::line2list(is, coords, 4);
-				vertex(coords, cnt);
-				state = INIT;
-				break; }
-			case S_TEX: {
-				++vi[TEX];
-				int cnt = util::line2list(is, coords, 3);
-				tex(coords, cnt);
-				state = INIT;
-				break; }
-			case S_NORM: {
-				++vi[NORMAL];
-				int cnt = util::line2list(is, coords, 3);
-				normal(coords, cnt);
-				state = INIT;
-				break; }
-			case S_FACE: {
-				bool has[3] = { false, false, false };
-
-				for (int i = 0; i < 3; ++i) fi[i].clear();
-				while (is.peek() != '\n') {
-					int cur;
-					util::skip_ws(is);
-					for (int i = 0; i < 3; ++i) fi[i].push_back(0);
-					for (int i = 0; i < 3; ++i) { // read one */*/* group
-						bool empty = is.peek() == '/';
-						if (!empty) {
-							is >> cur; util::skip_ws(is);
-							fi[i].back() = objidx(cur, vi[i]);
-							has[i] = true;
-						} else {
-							has[i] = false;
-						}
-						if (is.peek() != '/') break;
-						else is.get();
-					}
-				}
-
-				face(has[VERTEX], fi[VERTEX].data(), has[TEX], fi[TEX].data(), has[NORMAL], fi[NORMAL].data(), fi[VERTEX].size());
-				state = INIT;
-				break; }
-			}
-		}
-#else
 		while (!is.eof()) {
 			std::string id;
 			util::skip_ws(is);
@@ -439,11 +228,10 @@ struct OBJReader {
 
 				face(has[VERTEX], fi[VERTEX].data(), has[TEX], fi[TEX].data(), has[NORMAL], fi[NORMAL].data(), fi[VERTEX].size());
 			} else {
-				std::cout << "Skipping invalid OBJ line " << id << std::endl;
+// 				std::cout << "Skipping invalid OBJ line " << id << std::endl;
 				util::skip_line(is);
 			}
 		}
-#endif
 		prog.end();
 	}
 };

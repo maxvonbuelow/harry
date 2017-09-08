@@ -1,11 +1,7 @@
 #pragma once
 
-// #include <stack>
+#include <stack>
 #include "../../assert.h"
-
-// TODO:
-// zero triangles
-// vertices w/o faces
 
 #define DFS
 
@@ -252,33 +248,6 @@ struct CutBorder : CutBorderBase {
 			}
 		}
 	}
-// 	void find_element(Data v, int &i, int &p)
-// 	{
-// 		// this fn walks into both directions on the cutborder
-// 		Element *l = element;
-// 		Element *r = element;
-// 
-// 		i = 0; p = 0;
-// 		while (1) {
-// 			if (r->data.idx == v.idx) {
-// // 				++i;
-// 				return;
-// 			}/* else if (l->data.idx == v.idx) {
-// 				i = -i;
-// 				return;
-// 			}*/
-// 			r = r->next;
-// 			++i;
-// 
-// 			if (l == r) {
-// 				++p;
-// 				assert_ge(part - p, parts);
-// 				i = 0;
-// 				l = (part - p)->rootElement;
-// 				r = l;
-// 			}
-// 		}
-// 	}
 
 	void new_part(Element *root)
 	{
@@ -327,7 +296,6 @@ struct CutBorder : CutBorderBase {
 	}
 	Data connectForward(OP &op) // TODO: add border to realop
 	{
-// 		std::cout << "CONFWD ?? " << istri() << " " << part->nrEdges << " " << part->nrVertices << std::endl;
 		Data d = !element->next->isEdgeBegin ? Data(-1) : element->next->next->data;
 		if (istri()) {
 			// destroy
@@ -351,7 +319,6 @@ struct CutBorder : CutBorderBase {
 	}
 	Data connectBackward(OP &op) // TODO: add border to realop
 	{
-// 		std::cout << "CONBWD" << std::endl;
 		Data d = !element->prev->isEdgeBegin ? Data(-1) : element->prev->data;
 		if (istri()) {
 			// destroy
@@ -369,7 +336,6 @@ struct CutBorder : CutBorderBase {
 			del_element(element->prev);
 			e0->set_next(e1);
 
-// 			next(e1->next, e0);
 			next(e1->next, e1);
 			op = CONNBWD;
 		}
@@ -451,19 +417,16 @@ struct CutBorder : CutBorderBase {
 
 		// add part
 		if (i > 0) {
-// 			std::cout << "POS SPLIT " << edgecnt << " <-- edges " << i << std::endl;
 			--i;
 			part->rootElement = traversalorder(e1, e0);
 			part->nrVertices -= i + 1;
 			part->nrEdges -= edgecnt;
 			new_part(newroot); // root unimportant -> will be overwritten; TODO: remove
-// 			std::cout << "NRV: " << part->nrVertices << std::endl;
 			part->nrVertices += i + 1;
 			part->nrEdges += edgecnt + 1;
 
 			next(newroot, split);
 		} else {
-// 			std::cout << "NEG SPLIT" << std::endl;
 			i = -i;
 
 			part->rootElement = traversalorder(newroot, split);
@@ -474,7 +437,6 @@ struct CutBorder : CutBorderBase {
 			part->nrEdges += edgecnt + 1;
 
 			std::swap(*part, *(part - 1));
-// 			swapped.push((part - 1) - parts);
 			swapped = (part - 1) - parts;
 			have_swap = true;
 
@@ -502,7 +464,6 @@ struct CutBorder : CutBorderBase {
 		(part - p)->nrVertices += part->nrVertices; part->nrVertices = 0;
 		(part - p)->nrEdges += part->nrEdges + 1; part->nrEdges = 0;
 		(part - p)->rootElement = traversalorder(newroot, un); // sometimes it's more efficient to remove this line
-// 		std::cout << "--------------- PART OFFSET: " << p << std::endl;
 		std::swap(*(part - p), *(part - 1)); // process the parts in correct traversal order
 		del_part();
 
@@ -515,12 +476,6 @@ struct CutBorder : CutBorderBase {
 	{
 		return !!vertices[i];
 	}
-
-// 	template <typename ...Params>
-// 	void init(Element *e, Params &&...params)
-// 	{
-// 		e->data.init(std::forward<Params>(params)...);
-// 	}
 
 	bool findAndUpdate(Data v, int &i, int &p, OP &op)
 	{
@@ -550,38 +505,5 @@ struct CutBorder : CutBorderBase {
 			}
 		}
 		return true;
-	}
-
-	void draw(std::ostream &os, bool force = false)
-	{
-		bool write = false;
-		Part *curpart = part;
-		while (curpart) {
-			if (write || force) os << "###" << (curpart - parts) << " (" << curpart->nrVertices << ", " << curpart->nrEdges << ")  ";
-			Element *cur = curpart == part ? element : curpart->rootElement;
-			Element *beg = cur;
-			int edges = 0, vertices = 0;
-			int inactives = 0;
-			do {
-				assert_eq(cur, cur->prev->next);
-				assert_eq(cur, cur->next->prev);
-				++vertices;
-				if (!cur->isEdgeBegin) {
-					++inactives;
-					if (write || force) os << "{" << cur->data.idx << "-" << cur->next->data.idx << "} -> ";
-				} else {
-					inactives = 0;
-					if (write || force) os << "[" << cur->data.idx << "-" << cur->next->data.idx << "] -> ";
-					++edges;
-				}
-				assert_le(inactives, 1);
-				cur = cur->next;
-			} while (cur != beg);
-			assert_eq(edges, curpart->nrEdges);
-			assert_eq(vertices, curpart->nrVertices);
-			if (curpart == parts) curpart = NULL;
-			else --curpart;
-		}
-		if (write || force) os << std::endl;
 	}
 };

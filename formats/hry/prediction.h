@@ -122,15 +122,11 @@ T decodeDelta(const T delta, const T pred, const int q)
 template <class T>
 T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
 {
-// 	std::cout << bits << std::endl;
-// 	assert_eq(bits, 32);
-// 	bits=32;
        const T max_pos = mask<T>(bits) - pred;
        // this is a corner case where the whole range is positive only
        if (pred == T(0)) return raw;
  
        const T balanced_max = std::min(T(pred), max_pos);
-// 	  std::cout << "bm: " << balanced_max << std::endl;
        if (raw < pred)
        {
               const T dlt = pred - raw;
