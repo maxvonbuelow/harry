@@ -5,10 +5,12 @@
 
 #define INVALID_PAIR mesh::conn::fepair()
 
+namespace cbm {
+
 struct CoderData {
 	mesh::conn::fepair a;
 
-	inline CoderData() : a(INVALID_PAIR)
+	inline CoderData()
 	{}
 
 	inline void init(mesh::conn::fepair _a)
@@ -34,3 +36,5 @@ struct CBMStats {
 	int used_parts, used_elements;
 	int nm;
 };
+
+}

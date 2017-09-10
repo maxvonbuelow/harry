@@ -38,7 +38,7 @@ struct bitostream {
 
 	void flush()
 	{
-		if (idx == 0) return; // buffer empty
+		if (idx == 0) return; // buffer already empty
 		os << buf;
 		buf = 0; idx = 0; // clear and reset
 	}

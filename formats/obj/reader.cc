@@ -37,6 +37,7 @@ struct OBJReader {
 	mesh::regidx_t vtx_reg[5];
 	mesh::regidx_t face_reg[64];
 	std::vector<std::pair<mesh::listidx_t, mesh::attridx_t>> tex_loc, normal_loc;
+	std::vector<std::string> mtllibs;
 
 	OBJReader(mesh::Builder &_builder) : builder(_builder),
 		attr_lists{ { IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL } },
@@ -154,7 +155,6 @@ struct OBJReader {
 
 		int vi[3] = { 0 };
 		std::vector<int> fi[3];
-		std::vector<std::string> mtllibs;
 		std::string name;
 		real coords[4];
 

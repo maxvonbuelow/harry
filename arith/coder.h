@@ -53,10 +53,8 @@ struct Encoder : Coder<TF> {
 		os.flush();
 	}
 
-// 	std::ofstream oss = std::ofstream("arith.dbg");
 	void operator()(TF l, TF h, TF t)
 	{
-// 		oss << l << " " << h << " " << t << std::endl;
 		TF r = R / t;
 		L = L + r * l;
 		if (h < t)
@@ -110,7 +108,6 @@ struct Decoder : Coder<TF> {
 	TF R, D, r; // R = range
 	bitistream is;
 
-// 	std::ifstream iss = std::ifstream("arith.dbg");
 	Decoder(std::istream &_is) : is(_is), R(HALF), D(0)
 	{
 		for (int i = 0; i < b; ++i) {
@@ -131,10 +128,6 @@ struct Decoder : Coder<TF> {
 	void operator()(TF l, TF h, TF t)
 	{
 		++lineno;
-// 		TF ll, hh, tt;
-// 		iss >> ll >> hh >> tt;
-// 		if (ll != l || hh != h || tt != t) std::cout << "(INFO) Line: " << lineno << std::endl;
-// 		assert_eq(ll, l); assert_eq(hh, h); assert_eq(tt, t);
 		// r already set by decode_target
 		D = D - r * l;
 		if (h < t)

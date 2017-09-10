@@ -120,11 +120,11 @@ void compress(std::ostream &os, mesh::Mesh &mesh, D &draw)
 	os.flush();
 	arith::Encoder<> coder(os);
 	HryModels models(mesh);
-	::writer wr(models, coder);
-	attrcode::AttrCoder<::writer> ac(mesh, wr);
+	io::writer wr(models, coder);
+	attrcode::AttrCoder<io::writer> ac(mesh, wr);
 	progress::handle prog;
 	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
-	encode(mesh, draw, wr, ac, prog);
+	cbm::encode(mesh, draw, wr, ac, prog);
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << std::endl;
 	progress::handle proga;

@@ -69,10 +69,11 @@ namespace attrcode {
 
 struct AbsAttrCoder {
 	std::vector<bool> vtx_is_encoded;
-	int curparal;
+	std::vector<bool> face_is_encoded;
+	int curparal, curneigh;
 	mesh::Mesh &mesh;
 
-	AbsAttrCoder(mesh::Mesh &_mesh) : mesh(_mesh), vtx_is_encoded(_mesh.attrs.num_vtx(), false)
+	AbsAttrCoder(mesh::Mesh &_mesh) : mesh(_mesh), vtx_is_encoded(_mesh.attrs.num_vtx(), false), face_is_encoded(_mesh.attrs.num_face(), false)
 	{}
 
 	void use_paral(mesh::vtxidx_t v0, mesh::vtxidx_t v1, mesh::vtxidx_t vo, mesh::regidx_t r)
@@ -93,7 +94,6 @@ struct AbsAttrCoder {
 		}
 		++curparal;
 	}
-
 	void paral(mesh::conn::fepair ein, mesh::regidx_t r)
 	{
 		mesh::conn::fepair e = ein, e0, e1, t;
@@ -108,7 +108,7 @@ struct AbsAttrCoder {
 		e0 = mesh.conn.enext(e);
 		e1 = mesh.conn.eprev(e);
 		use_paral(mesh.conn.org(e0), mesh.conn.org(e1), mesh.conn.dest(e0), r);
-		if (mesh.conn.num_edges(e.f()) > 4) // when polygon is a pentagon or more, we have two parallelograms
+		if (mesh.conn.num_edges(e.f()) > 4) // when the polygon is a pentagon or more, we have two parallelograms
 			use_paral(mesh.conn.org(e0), mesh.conn.org(e1), mesh.conn.org(mesh.conn.eprev(e)), r);
 	}
 	void tfan(mesh::conn::fepair ein, mesh::regidx_t r, mesh::vtxidx_t debug)
@@ -139,7 +139,34 @@ BWD:
 		} while (e != ein);
 	}
 
-	void vtx(mesh::faceidx_t ff, mesh::ledgeidx_t ee, bool in = false)
+	void get_prediction(mesh::listidx_t l, int num_parts)
+	{
+		// compute average
+		mixing::View avg = mesh.attrs[l].big()[0];
+		avg.set([] (const auto) { return 0; }, avg);
+		for (int i = 0; i < num_parts; ++i) {
+			avg.sets([] (const auto cur, const auto val) { return cur + val; }, avg, mesh.attrs[l].cache()[i]);
+		}
+		avg.set([num_parts] (const auto cur) { return num_parts == 0 ? decltype(cur)(0) : transform::divround(cur, (decltype(cur))num_parts); }, avg);
+
+		// selection (without quantization or integral values: average; with quantization: value closest to quantization)
+		mixing::View res = mesh.attrs[l].accu()[0];
+		if (num_parts == 0) {
+			res.set([] (const auto x) { return decltype(x)(0); }, res);
+		} else {
+			res.set([] (const auto x) { return std::numeric_limits<decltype(x)>::max(); }, res);
+			for (int i = 0; i < num_parts; ++i) {
+				res.setst([] (mixing::Type t, const auto resv, const auto predv, const auto avgv) {
+					if (t != mixing::DOUBLE && t != mixing::FLOAT) return avgv;
+
+					decltype(resv) resdiff = avgv > resv ? avgv - resv : resv - avgv;
+					decltype(predv) preddiff = avgv > predv ? avgv - predv : predv - avgv;
+					return resdiff < preddiff ? resv : predv;
+				}, res, mesh.attrs[l].cache()[i], avg);
+			}
+		}
+	}
+	void vtx(mesh::faceidx_t ff, mesh::ledgeidx_t ee)
 	{
 		// TODO: ULONG and LONG must handled seperately: div first add then
 		mesh::conn::fepair e(ff, ee);
@@ -153,31 +180,52 @@ BWD:
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
+			get_prediction(l, num_paral);
+		}
+	}
 
-			// compute average
-			mixing::View avg = mesh.attrs[l].big()[0];
-			avg.set([] (const auto) { return 0; }, avg);
-			for (int i = 0; i < num_paral; ++i) {
-				avg.sets([] (const auto cur, const auto val) { return cur + val; }, avg, mesh.attrs[l].cache()[i]);
-			}
-			avg.set([num_paral] (const auto cur) { return num_paral == 0 ? decltype(cur)(0) : transform::divround(cur, (decltype(cur))num_paral); }, avg);
+	void use_neigh(mesh::faceidx_t f, mesh::regidx_t r)
+	{
+		if (!face_is_encoded[f]) return;
+		mesh::regidx_t r0 = mesh.attrs.face2reg(f);
+		if (r0 != r) return;
 
-			// selection (without quantization or integral values: average; with quantization: value closest to quantization)
-			mixing::View res = mesh.attrs[l].accu()[0];
-			if (num_paral == 0) {
-				res.set([] (const auto x) { return decltype(x)(0); }, res);
-			} else {
-				res.set([] (const auto x) { return std::numeric_limits<decltype(x)>::max(); }, res);
-				for (int i = 0; i < num_paral; ++i) {
-					res.setst([] (mixing::Type t, const auto resv, const auto predv, const auto avgv) {
-						if (t != mixing::DOUBLE && t != mixing::FLOAT) return avgv;
+		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_face_reg(r); ++a) {
+			mesh::listidx_t l = mesh.attrs.binding_reg_facelist(r, a);
 
-						decltype(resv) resdiff = avgv > resv ? avgv - resv : resv - avgv;
-						decltype(predv) preddiff = avgv > predv ? avgv - predv : predv - avgv;
-						return resdiff < preddiff ? resv : predv;
-					}, res, mesh.attrs[l].cache()[i], avg);
-				}
-			}
+			// fetch values
+			mixing::View d0 = mesh.attrs[l][mesh.attrs.binding_face_attr(f, a)];
+
+			// add prediction
+			if (mesh.attrs[l].cache().size() <= curneigh) mesh.attrs[l].cache().resize(curneigh + 1);
+			mesh.attrs[l].cache()[curneigh].setq([] (int q, const auto d0c) { return pred::predict_face(d0c, q); }, d0);
+		}
+		++curneigh;
+	}
+	void neighs(mesh::conn::fepair e, mesh::regidx_t r)
+	{
+		mesh::conn::fepair cur = e;
+		do {
+			// use cur
+			mesh::conn::fepair n = mesh.conn.twin(cur);
+			if (n != cur) use_neigh(cur.f(), r);
+			cur = mesh.conn.enext(cur);
+		} while (cur != e);
+	}
+	void face(mesh::faceidx_t f, mesh::ledgeidx_t ee)
+	{
+		mesh::regidx_t r = mesh.attrs.face2reg(f);
+		mesh::conn::fepair e(f, ee);
+
+		// get neighs
+		curneigh = 0;
+		neighs(e, r);
+		face_is_encoded[f] = true;
+		int num_neigh = curneigh;
+
+		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_face_reg(r); ++a) {
+			mesh::listidx_t l = mesh.attrs.binding_reg_facelist(r, a);
+			get_prediction(l, num_neigh);
 		}
 	}
 };
@@ -189,6 +237,7 @@ struct AttrCoder : AbsAttrCoder {
 // 	std::vector<GlobalHistory> ghist;
 // 	std::vector<LocalHistory> lhist;
 	std::vector<mesh::conn::fepair> order;
+	std::vector<mesh::conn::fepair> order_f;
 
 	AttrCoder(mesh::Mesh &_mesh, WR &_wr) : mesh(_mesh), wr(_wr), AbsAttrCoder(_mesh)/*, ghist(mesh.attrs.size()), lhist(mesh.attrs.size_wedge)*/
 	{
@@ -205,13 +254,19 @@ struct AttrCoder : AbsAttrCoder {
 		mesh::conn::fepair e(f, le);
 		order.push_back(e);
 	}
+	void face(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+		mesh::conn::fepair e(f, le);
+		order_f.push_back(e);
+	}
+
 	void vtx_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
 	{
 		mesh::conn::fepair e(f, le);
 		mesh::vtxidx_t v = mesh.conn.org(e);
 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
 
-		AbsAttrCoder::vtx(f, le, true);
+		AbsAttrCoder::vtx(f, le);
 		wr.reg_vtx(r);
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
@@ -219,6 +274,21 @@ struct AttrCoder : AbsAttrCoder {
 
 			mixing::View res = mesh.attrs[l].accu()[0];
 			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
+			wr.attr_data(res, l);
+		}
+	}
+	void face_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+		mesh::regidx_t r = mesh.attrs.face2reg(f);
+
+		AbsAttrCoder::face(f, le);
+		wr.reg_face(r);
+
+		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_face_reg(r); ++a) {
+			mesh::listidx_t l = mesh.attrs.binding_reg_facelist(r, a);
+
+			mixing::View res = mesh.attrs[l].accu()[0];
+			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_face_attr(f, a)], res);
 			wr.attr_data(res, l);
 		}
 	}
@@ -232,6 +302,10 @@ struct AttrCoder : AbsAttrCoder {
 
 			vtx_post(e.f(), e.e());
 			prog(i);
+		}
+		for (int i = 0; i < order_f.size(); ++i) {
+			mesh::conn::fepair &e = order_f[i];
+			face_post(e.f(), e.e());
 		}
 		prog.end();
 	}
@@ -338,11 +412,11 @@ struct AttrDecoder : AbsAttrCoder {
 	{
 		mesh::conn::fepair e(f, le);
 		mesh::vtxidx_t v = builder.mesh.conn.org(e);
+		mesh::regidx_t r = rd.reg_vtx();
+		builder.vtx_reg(v, r);
 
 		AbsAttrCoder::vtx(f, le);
 
-		mesh::regidx_t r = rd.reg_vtx();
-		builder.vtx_reg(v, r);
 		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
 
@@ -350,6 +424,30 @@ struct AttrDecoder : AbsAttrCoder {
 			rd.attr_data(builder.mesh.attrs[l][attridx], l);
 
 			builder.bind_vtx_attr(v, a, attridx);
+
+			mixing::View pred = mesh.attrs[l].accu()[0];
+			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
+		}
+	}
+
+	void face(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+		// order is obvious: [ 0 0 ], [ 1 0 ], [ 2 0 ]...
+	}
+	void face_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+		mesh::regidx_t r = rd.reg_face();
+		builder.face_reg(f, r);
+
+		AbsAttrCoder::face(f, le);
+
+		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_face_reg(r); ++a) {
+			mesh::listidx_t l = builder.mesh.attrs.binding_reg_facelist(r, a);
+
+			mesh::attridx_t attridx = cur_idx[l]++;
+			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+
+			builder.bind_face_attr(f, a, attridx);
 
 			mixing::View pred = mesh.attrs[l].accu()[0];
 			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
@@ -365,6 +463,9 @@ struct AttrDecoder : AbsAttrCoder {
 
 			vtx_post(e.f(), e.e());
 			prog(i);
+		}
+		for (int i = 0; i < builder.mesh.attrs.num_face(); ++i) {
+			face_post(i, 0);
 		}
 		prog.end();
 	}

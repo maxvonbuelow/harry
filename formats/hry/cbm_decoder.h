@@ -12,6 +12,8 @@
 
 #include "attrcode.h"
 
+namespace cbm {
+
 template <typename R, typename P>
 CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 {
@@ -202,6 +204,7 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 // 					ac.wedge(f, curtri + 2, v2.idx);
 // 				}
 				if (op == CutBorderBase::ADDVTX) ac.vtx(f, curtri + 2);
+				if (seq_first) ac.face(f, 0);
 				++curtri;
 				if (seq_last) {
 					builder.face_end();
@@ -249,4 +252,6 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 	prog.end();
 
 	return CBMStats{ cutBorder.max_parts, cutBorder.max_elements, nm };
+}
+
 }

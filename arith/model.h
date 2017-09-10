@@ -23,15 +23,12 @@ struct Model {
 	}
 };
 
-// std::unordered_set<uint64_t> ptrs;
 template <typename T, typename S, typename TF = uint64_t>
 struct ModelMult : Model<TF> {
 	S stats[sizeof(T)];
 
 	ModelMult(bool init = true)
 	{
-// 		if (ptrs.find((uint64_t)stats) != ptrs.end()) std::exit(1);
-// 		ptrs.insert((uint64_t)stats);
 		if (init) {
 			for (uint64_t i = 0; i < sizeof(T); ++i) {
 				for (uint64_t j = 0; j < 256; ++j) {
@@ -63,7 +60,6 @@ struct ModelMult : Model<TF> {
 		assert_eq(sizeof(T), n);
 		for (int i = 0; i < sizeof(T); ++i) {
 			s[i] = coder(this->stats[i]);
-// 			std::cout << "cur char: " << i << " = " << (int)s[i] << " cur freq: " << this->stats[i].frequency(s[i]) << std::endl;
 			this->stats[i].inc(s[i]);
 		}
 	}

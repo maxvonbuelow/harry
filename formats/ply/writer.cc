@@ -39,6 +39,7 @@ static std::vector<std::vector<const char*>> lutinterp2name = {
 	{ "diffuse_red", "diffuse_green", "diffuse_blue" }, // color_diffuse
 	{ "specular_red", "specular_green", "specular_blue" }, // color_specular
 	{ "u", "v", "tw" }, // tex
+	{ "scale" }, { "confidence" }
 };
 static std::vector<const char*> lutinterp2name2 = {
 	"pos", "normal", "color", "ambient", "diffuse", "specular", "tex",

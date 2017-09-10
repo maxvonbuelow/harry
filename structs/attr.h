@@ -87,9 +87,9 @@ struct Attr : mixing::Array {
 		mixing::View min = this->min(), max = this->max();
 		mixing::View spre = accu()[0];
 		spre.set([] (auto mi, auto ma) { return ma - mi; }, min, max);
-		std::cout << "Scale: "; spre.print(std::cout); std::cout << std::endl;
-		std::cout << "Min: "; min.print(std::cout); std::cout << std::endl;
-		std::cout << "Max: "; max.print(std::cout); std::cout << std::endl;
+// 		std::cout << "Scale: "; spre.print(std::cout); std::cout << std::endl;
+// 		std::cout << "Min: "; min.print(std::cout); std::cout << std::endl;
+// 		std::cout << "Max: "; max.print(std::cout); std::cout << std::endl;
 
 		mixing::View s = scale();
 		s.set([] (auto dummy) { return std::numeric_limits<decltype(dummy)>::min(); }, s);
@@ -132,7 +132,7 @@ struct Attr : mixing::Array {
 			case mixing::CHAR:   s.at<int8_t>(j)   = s.get<int8_t>(k);   break;
 			}
 		}
-		std::cout << "New scale: "; s.print(std::cout); std::cout << std::endl;
+// 		std::cout << "New scale: "; s.print(std::cout); std::cout << std::endl;
 	}
 
 	void quantize(const std::vector<int> &quant)

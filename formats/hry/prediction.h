@@ -211,6 +211,23 @@ T predict(const T v0, const T v1, const T v2, const int q)
 	return predict(v0, v1, v2, quant2bits<T>(q), std::is_floating_point<T>());
 }
 
+template <typename T>
+T predict_face(const T v0, const int q, std::false_type)
+{
+	return v0;
+}
+template <typename T>
+T predict_face(const T v0, const int q, std::true_type)
+{
+	return v0;
+}
+
+template <typename T>
+T predict_face(const T v0, const int q)
+{
+	return predict_face(v0, q, std::is_floating_point<T>());
+}
+
 // template <class T>
 // T predictRange(const T min, const T max)
 // {

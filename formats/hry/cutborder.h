@@ -5,6 +5,8 @@
 
 #define DFS
 
+namespace cbm {
+
 template <typename T>
 struct DataTpl : T {
 	int idx;
@@ -507,3 +509,5 @@ struct CutBorder : CutBorderBase {
 		return true;
 	}
 };
+
+}

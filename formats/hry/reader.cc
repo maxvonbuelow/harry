@@ -130,10 +130,10 @@ void read(std::istream &is, mesh::Mesh &mesh)
 
 	arith::Decoder<> coder(is);
 	HryModels models(builder.mesh);
-	::reader rd(models, coder);
-	attrcode::AttrDecoder<::reader> ac(builder, rd);
+	io::reader rd(models, coder);
+	attrcode::AttrDecoder<io::reader> ac(builder, rd);
 	progress::handle prog;
-	decode(builder, rd, ac, prog);
+	cbm::decode(builder, rd, ac, prog);
 	progress::handle proga;
 	ac.decode(proga);
 

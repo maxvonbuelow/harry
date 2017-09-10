@@ -59,13 +59,13 @@ struct drawer {
 
 		wid->set_scale(1.0 / metric * 0.2);
 	}
-	void operator()(mesh::faceidx_t f, int curtri, int ntri, mesh::vtxidx_t a, mesh::vtxidx_t b, mesh::vtxidx_t c, CutBorderBase::INITOP op)
+	void operator()(mesh::faceidx_t f, int curtri, int ntri, mesh::vtxidx_t a, mesh::vtxidx_t b, mesh::vtxidx_t c, cbm::CutBorderBase::INITOP op)
 	{
 		(*this)(f, curtri, ntri, a, b, c, (int)op);
 	}
-	void operator()(mesh::faceidx_t f, int curtri, int ntri, mesh::vtxidx_t a, mesh::vtxidx_t b, mesh::vtxidx_t c, CutBorderBase::OP op)
+	void operator()(mesh::faceidx_t f, int curtri, int ntri, mesh::vtxidx_t a, mesh::vtxidx_t b, mesh::vtxidx_t c, cbm::CutBorderBase::OP op)
 	{
-		(*this)(f, curtri, ntri, a, b, c, (int)(op + CutBorderBase::ILAST + 1));
+		(*this)(f, curtri, ntri, a, b, c, (int)(op + cbm::CutBorderBase::ILAST + 1));
 	}
 
 	void operator()(mesh::faceidx_t f, int curtri, int ntri, mesh::vtxidx_t a, mesh::vtxidx_t b, mesh::vtxidx_t c, int op)
@@ -119,30 +119,30 @@ struct drawer {
 	void operator()(Vertex aa, Vertex bb, Vertex cc, int op, bool last)
 	{
 		Color col(1, 1, 1);
-		if (op <= CutBorderBase::ILAST) {
+		if (op <= cbm::CutBorderBase::ILAST) {
 			switch (op) {
-			case CutBorderBase::INIT:
+			case cbm::CutBorderBase::INIT:
 				col = Color(1, 0, 0);
 				if (firstrecenter) recenter(aa, bb, cc);
 				break;
-			case CutBorderBase::TRI111:
+			case cbm::CutBorderBase::TRI111:
 				col = Color(1, 1, 1);
 				break;
-			case CutBorderBase::TRI110:
-			case CutBorderBase::TRI101:
-			case CutBorderBase::TRI011:
+			case cbm::CutBorderBase::TRI110:
+			case cbm::CutBorderBase::TRI101:
+			case cbm::CutBorderBase::TRI011:
 				col = Color(0.6, 0.6, 0.6);
 				break;
-			case CutBorderBase::TRI100:
-			case CutBorderBase::TRI010:
-			case CutBorderBase::TRI001:
+			case cbm::CutBorderBase::TRI100:
+			case cbm::CutBorderBase::TRI010:
+			case cbm::CutBorderBase::TRI001:
 				col = Color(0.2, 0.2, 0.2);
 				break;
 			}
 			wid->push_face(aa.d, bb.d, cc.d, col.c);
 		} else {
-			--op -= (int)CutBorderBase::ILAST;
-			if (op == CutBorderBase::BORDER) {
+			--op -= (int)cbm::CutBorderBase::ILAST;
+			if (op == cbm::CutBorderBase::BORDER) {
 				float n[3], e[3], d[3], a2[3], b2[3];
 				wid->compute_normal(aa.d, bb.d, cc.d, n);
 
@@ -171,22 +171,22 @@ struct drawer {
 				wid->push_face(a2, bb.d, aa.d, col.c);
 			} else {
 				switch (op) {
-				case CutBorderBase::ADDVTX:
+				case cbm::CutBorderBase::ADDVTX:
 					col = Color(0, 0, 1);
 					break;
-				case CutBorderBase::CONNBWD:
+				case cbm::CutBorderBase::CONNBWD:
 					col = Color(0, 1, 0);
 					break;
-				case CutBorderBase::CONNFWD:
+				case cbm::CutBorderBase::CONNFWD:
 					col = Color(0, 0.5, 0);
 					break;
-				case CutBorderBase::SPLIT:
+				case cbm::CutBorderBase::SPLIT:
 					col = Color(1, 0, 1);
 					break;
-				case CutBorderBase::UNION:
+				case cbm::CutBorderBase::UNION:
 					col = Color(1, 1, 0);
 					break;
-				case CutBorderBase::NM:
+				case cbm::CutBorderBase::NM:
 					col = Color(1, 1, 1);
 					break;
 				}
