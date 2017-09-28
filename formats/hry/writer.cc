@@ -2,18 +2,9 @@
 
 #include <thread>
 
-// #define GUI
-
-#ifdef GUI
-#include <QApplication>
-#include <QDesktopWidget>
-#include <QSurfaceFormat>
-#endif
-
 #include "cbm_encoder.h"
 #include "io.h"
 #include "../../progress.h"
-#include "../../gui.h"
 
 namespace hry {
 namespace writer {
@@ -146,24 +137,8 @@ struct voiddrawer { template <typename ...T> void operator()(T &&...x) {} };
 
 void write(std::ostream &os, mesh::Mesh &mesh)
 {
-#ifdef GUI
-	int argc = 0; char **argv;
-	QApplication app(argc, argv);
-	MainWindow *mainWindow = new MainWindow(mesh.num_edge() + 1000);
-	mainWindow->resize(mainWindow->sizeHint());
-	mainWindow->show();
-	AssertMngr::set([&] { /*AssertMngr::keepalive();*/((Window*)mainWindow->centralWidget())->glWidget->paused = true; });
-
-	drawer draw(((Window*)mainWindow->centralWidget())->glWidget, mesh);
-	compress_bg(os, mesh, draw, true);
-	app.exec();
-#else
-	AssertMngr::set([] { std::exit(1); });
 	voiddrawer draw;
 	compress_bg(os, mesh, draw, false);
-#endif
-
-
 }
 
 }

@@ -1,23 +1,20 @@
 cmake_minimum_required(VERSION 2.8.11)
-project(BA)
+
+project(Harry)
+
+set(FMTS hry ply obj)
+set(EXE_NAME harry)
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5OpenGL REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(GLUT REQUIRED)
-# find_package(ZLIB REQUIRED)
-
-
-  if (CMAKE_VERSION VERSION_LESS "3.1")
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-      set (CMAKE_CXX_FLAGS "--std=gnu++14 ${CMAKE_CXX_FLAGS}")
-    endif ()
-  else ()
-    set (CMAKE_CXX_STANDARD 14)
-  endif ()
+if (CMAKE_VERSION VERSION_LESS "3.1")
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		set (CMAKE_CXX_FLAGS "--std=gnu++14 ${CMAKE_CXX_FLAGS}")
+	endif ()
+	else ()
+		set (CMAKE_CXX_STANDARD 14)
+	endif ()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR})
 
 find_package(Threads REQUIRED)
@@ -28,17 +25,15 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w") # :)
 
-# file(GLOB ba_SRC "*.h" "*.cc")
+set(FMTSRC "")
+FOREACH(f ${FMTS})
+	LIST(APPEND FMTSRC "formats/${f}/reader.cc")
+	LIST(APPEND FMTSRC "formats/${f}/writer.cc")
+ENDFOREACH(f)
 
-add_executable(ba main.cc assert.cc formats/hry/reader.cc formats/hry/writer.cc formats/ply/reader.cc formats/ply/writer.cc formats/obj/reader.cc formats/obj/writer.cc inspect/glwidget.cc inspect/mainwindow.cc inspect/window.cc)
-# add_executable(plycat utils/plycat.cc)
+add_executable(${EXE_NAME} main.cc assert.cc ${FMTSRC})
 
-qt5_use_modules(ba Widgets OpenGL)
-
-# Use the Widgets module from Qt 5.
-target_link_libraries(ba ${QT_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
-
-include_directories("${CMAKE_SOURCE_DIR}/" "${CMAKE_SOURCE_DIR}/inspect" ${QT_INCLUDES} ${GLUT_INCLUDE_DIR} ${GLEW_INCLUDE_DIR})
+include_directories("${CMAKE_SOURCE_DIR}/")
 

@@ -111,6 +111,10 @@ struct Conn {
 	{
 		return a.f();
 	}
+	inline edgeidx_t edge(fepair a) const
+	{
+		return f.off(a.f()) + a.e();
+	}
 
 	inline void set_org(faceidx_t fi, ledgeidx_t v, vtxidx_t o)
 	{
@@ -127,7 +131,7 @@ struct Conn {
 	}
 	inline fepair twin(fepair a) const
 	{
-		return edges[f.off(a.f()) + a.e()].twin;
+		return edges[edge(a)].twin;
 	}
 	inline vtxidx_t org(faceidx_t fi, ledgeidx_t v) const
 	{
@@ -143,13 +147,13 @@ struct Conn {
 	}
 	inline void fmerge(fepair a, fepair b)
 	{
-		edges[f.off(a.f()) + a.e()].twin = b;
-		edges[f.off(b.f()) + b.e()].twin = a;
+		edges[edge(a)].twin = b;
+		edges[edge(b)].twin = a;
 	}
 	inline void swap(fepair a, fepair b)
 	{
-		fmerge(edges[f.off(a.f()) + a.e()].twin, edges[f.off(b.f()) + b.e()].twin);
-// 		fmerge(edges[f.off(b.f()) + b.e()].twin, edges[f.off(b.f()) + b.e()].twin);
+		fmerge(edges[edge(a)].twin, edges[edge(b)].twin);
+// 		fmerge(edges[edge(b)].twin, edges[edge(b)].twin);
 		fmerge(a, b);
 	}
 };

@@ -94,6 +94,9 @@ struct AbsAttrCoder {
 		}
 		++curparal;
 	}
+	void use_corner(mesh::conn::fepair e, mesh::regidx_t r)
+	{
+	}
 	void paral(mesh::conn::fepair ein, mesh::regidx_t r)
 	{
 		mesh::conn::fepair e = ein, e0, e1, t;
@@ -111,7 +114,7 @@ struct AbsAttrCoder {
 		if (mesh.conn.num_edges(e.f()) > 4) // when the polygon is a pentagon or more, we have two parallelograms
 			use_paral(mesh.conn.org(e0), mesh.conn.org(e1), mesh.conn.org(mesh.conn.eprev(e)), r);
 	}
-	void tfan(mesh::conn::fepair ein, mesh::regidx_t r, mesh::vtxidx_t debug)
+	void tfan(mesh::conn::fepair ein, mesh::regidx_t r)
 	{
 		mesh::conn::fepair e = ein, t;
 		do {
@@ -119,7 +122,6 @@ struct AbsAttrCoder {
 			t = mesh.conn.twin(e);
 			if (t == e) goto BWD;
 			e = mesh.conn.enext(t);
-			assert_eq(debug, mesh.conn.org(e));
 		} while (e != ein);
 		return;
 
@@ -128,14 +130,36 @@ BWD:
 		t = mesh.conn.twin(e);
 		if (e == t) return;
 		e = t;
-		assert_eq(debug, mesh.conn.org(e));
 		do {
 			paral(e, r);
 			e = mesh.conn.eprev(e);
 			t = mesh.conn.twin(e);
 			if (e == t) break;
 			e = t;
-			assert_eq(debug, mesh.conn.org(e));
+		} while (e != ein);
+	}
+	void tfan_corner(mesh::conn::fepair ein, mesh::regidx_t r) // TODO: dup code
+	{
+		mesh::conn::fepair e = ein, t;
+		do {
+			use_corner(e, r);
+			t = mesh.conn.twin(e);
+			if (t == e) goto BWD;
+			e = mesh.conn.enext(t);
+		} while (e != ein);
+		return;
+
+BWD:
+		e = mesh.conn.eprev(ein);
+		t = mesh.conn.twin(e);
+		if (e == t) return;
+		e = t;
+		do {
+			use_corner(e, r);
+			e = mesh.conn.eprev(e);
+			t = mesh.conn.twin(e);
+			if (e == t) break;
+			e = t;
 		} while (e != ein);
 	}
 
@@ -174,7 +198,7 @@ BWD:
 		mesh::regidx_t r = mesh.attrs.vtx2reg(v);
 
 		curparal = 0;
-		tfan(e, r, v);
+		tfan(e, r);
 		vtx_is_encoded[v] = true;
 		int num_paral = curparal;
 
@@ -186,7 +210,7 @@ BWD:
 
 	void use_neigh(mesh::faceidx_t f, mesh::regidx_t r)
 	{
-		if (!face_is_encoded[f]) return;
+		if (!face_is_encoded[f]) return; // TODO: ordered faces when decoding
 		mesh::regidx_t r0 = mesh.attrs.face2reg(f);
 		if (r0 != r) return;
 
@@ -228,6 +252,11 @@ BWD:
 			get_prediction(l, num_neigh);
 		}
 	}
+
+// 	void corner(mesh::faceidx_t f, mesh::ledgeidx_t ee)
+// 	{
+// 		
+// 	}
 };
 
 template <typename WR>
