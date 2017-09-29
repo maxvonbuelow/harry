@@ -126,19 +126,12 @@ void compress(std::ostream &os, mesh::Mesh &mesh, D &draw)
 	coder.flush();
 }
 
-template <typename D>
-void compress_bg(std::ostream &os, mesh::Mesh &mesh, D &draw, bool bg = true)
-{
-	if (bg) std::thread(compress<D>, std::ref(os), std::ref(mesh), std::ref(draw)).detach();
-	else compress<D>(os, mesh, draw);
-}
-
 struct voiddrawer { template <typename ...T> void operator()(T &&...x) {} };
 
 void write(std::ostream &os, mesh::Mesh &mesh)
 {
 	voiddrawer draw;
-	compress_bg(os, mesh, draw, false);
+	compress(os, mesh, draw);
 }
 
 }

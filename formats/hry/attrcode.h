@@ -67,10 +67,36 @@ namespace attrcode {
 // 	}
 // };
 
+// This is why my collegues hate me:
+#define TFAN_IT(CB) \
+do { \
+	mesh::conn::fepair e = ein, t; \
+	do { \
+		CB(e, r); \
+		t = mesh.conn.twin(e); \
+		if (t == e) goto BWD; \
+		e = mesh.conn.enext(t); \
+	} while (e != ein); \
+	return; \
+\
+BWD: \
+	e = mesh.conn.eprev(ein); \
+	t = mesh.conn.twin(e); \
+	if (e == t) return; \
+	e = t; \
+	do { \
+		CB(e, r); \
+		e = mesh.conn.eprev(e); \
+		t = mesh.conn.twin(e); \
+		if (e == t) break; \
+		e = t; \
+	} while (e != ein); \
+} while (0)
+
 struct AbsAttrCoder {
 	std::vector<bool> vtx_is_encoded;
 	std::vector<bool> face_is_encoded;
-	int curparal, curneigh;
+	int curparal, curneigh, curhist;
 	mesh::Mesh &mesh;
 
 	AbsAttrCoder(mesh::Mesh &_mesh) : mesh(_mesh), vtx_is_encoded(_mesh.attrs.num_vtx(), false), face_is_encoded(_mesh.attrs.num_face(), false)
@@ -96,6 +122,23 @@ struct AbsAttrCoder {
 	}
 	void use_corner(mesh::conn::fepair e, mesh::regidx_t r)
 	{
+		mesh::faceidx_t f = e.f();
+		mesh::ledgeidx_t lv = e.e();
+		if (!face_is_encoded[f]) return;
+		mesh::regidx_t r0 = mesh.attrs.face2reg(f);
+		if (r0 != r) return;
+
+		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_corner_reg(r); ++a) {
+			mesh::listidx_t l = mesh.attrs.binding_reg_cornerlist(r, a);
+
+			// fetch values
+			mixing::View d0 = mesh.attrs[l][mesh.attrs.binding_corner_attr(f, lv, a)];
+
+			// add prediction
+			if (mesh.attrs[l].cache().size() <= curhist) mesh.attrs[l].cache().resize(curhist + 1);
+			mesh.attrs[l].cache()[curhist].setq([] (int q, const auto d0c) { return pred::predict_face(d0c, q); }, d0);
+		}
+		++curhist;
 	}
 	void paral(mesh::conn::fepair ein, mesh::regidx_t r)
 	{
@@ -114,53 +157,14 @@ struct AbsAttrCoder {
 		if (mesh.conn.num_edges(e.f()) > 4) // when the polygon is a pentagon or more, we have two parallelograms
 			use_paral(mesh.conn.org(e0), mesh.conn.org(e1), mesh.conn.org(mesh.conn.eprev(e)), r);
 	}
+
 	void tfan(mesh::conn::fepair ein, mesh::regidx_t r)
 	{
-		mesh::conn::fepair e = ein, t;
-		do {
-			paral(e, r);
-			t = mesh.conn.twin(e);
-			if (t == e) goto BWD;
-			e = mesh.conn.enext(t);
-		} while (e != ein);
-		return;
-
-BWD:
-		e = mesh.conn.eprev(ein);
-		t = mesh.conn.twin(e);
-		if (e == t) return;
-		e = t;
-		do {
-			paral(e, r);
-			e = mesh.conn.eprev(e);
-			t = mesh.conn.twin(e);
-			if (e == t) break;
-			e = t;
-		} while (e != ein);
+		TFAN_IT(paral);
 	}
-	void tfan_corner(mesh::conn::fepair ein, mesh::regidx_t r) // TODO: dup code
+	void tfan_corner(mesh::conn::fepair ein, mesh::regidx_t r)
 	{
-		mesh::conn::fepair e = ein, t;
-		do {
-			use_corner(e, r);
-			t = mesh.conn.twin(e);
-			if (t == e) goto BWD;
-			e = mesh.conn.enext(t);
-		} while (e != ein);
-		return;
-
-BWD:
-		e = mesh.conn.eprev(ein);
-		t = mesh.conn.twin(e);
-		if (e == t) return;
-		e = t;
-		do {
-			use_corner(e, r);
-			e = mesh.conn.eprev(e);
-			t = mesh.conn.twin(e);
-			if (e == t) break;
-			e = t;
-		} while (e != ein);
+		TFAN_IT(use_corner);
 	}
 
 	void get_prediction(mesh::listidx_t l, int num_parts)
@@ -253,10 +257,26 @@ BWD:
 		}
 	}
 
-// 	void corner(mesh::faceidx_t f, mesh::ledgeidx_t ee)
-// 	{
-// 		
-// 	}
+	void corner(mesh::faceidx_t f, mesh::ledgeidx_t ee) // WARNING: needs to be called AFTER faces
+	{
+		mesh::regidx_t r = mesh.attrs.face2reg(f);
+		mesh::conn::fepair e(f, ee);
+
+		// get hist
+		curhist = 0;
+		assert(face_is_encoded[f]);
+		face_is_encoded[f] = false;
+		tfan_corner(e, r);
+		face_is_encoded[f] = true;
+// 		curhist = 0;
+// 		std::cout << curhist << std::endl;
+		int num_hist = curhist;
+
+		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_corner_reg(r); ++a) {
+			mesh::listidx_t l = mesh.attrs.binding_reg_cornerlist(r, a);
+			get_prediction(l, num_hist);
+		}
+	}
 };
 
 template <typename WR>
@@ -321,6 +341,20 @@ struct AttrCoder : AbsAttrCoder {
 			wr.attr_data(res, l);
 		}
 	}
+	void corner_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+		mesh::regidx_t r = mesh.attrs.face2reg(f);
+
+		AbsAttrCoder::corner(f, le);
+
+		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_corner_reg(r); ++a) {
+			mesh::listidx_t l = mesh.attrs.binding_reg_cornerlist(r, a);
+
+			mixing::View res = mesh.attrs[l].accu()[0];
+			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_corner_attr(f, le, a)], res);
+			wr.attr_data(res, l);
+		}
+	}
 
 	template <typename P>
 	void encode(P &prog)
@@ -335,6 +369,13 @@ struct AttrCoder : AbsAttrCoder {
 		for (int i = 0; i < order_f.size(); ++i) {
 			mesh::conn::fepair &e = order_f[i];
 			face_post(e.f(), e.e());
+			int ne = mesh.conn.num_edges(e.f()), c = e.e();
+			do {
+// 				std::cout  << e.f() << ": " << c << std::endl;
+				corner_post(e.f(), c);
+				++c;
+				if (c == ne) c = 0;
+			} while (c != e.e());
 		}
 		prog.end();
 	}
@@ -482,6 +523,24 @@ struct AttrDecoder : AbsAttrCoder {
 			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
 		}
 	}
+	void corner_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
+	{
+		mesh::regidx_t r = mesh.attrs.face2reg(f); // face region has already been read before
+
+		AbsAttrCoder::corner(f, le);
+
+		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_corner_reg(r); ++a) {
+			mesh::listidx_t l = builder.mesh.attrs.binding_reg_cornerlist(r, a);
+
+			mesh::attridx_t attridx = cur_idx[l]++;
+			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+
+			builder.bind_corner_attr(f, le, a, attridx);
+
+			mixing::View pred = mesh.attrs[l].accu()[0];
+			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
+		}
+	}
 
 	template <typename P>
 	void decode(P &prog)
@@ -495,6 +554,9 @@ struct AttrDecoder : AbsAttrCoder {
 		}
 		for (int i = 0; i < builder.mesh.attrs.num_face(); ++i) {
 			face_post(i, 0);
+			for (int c = 0; c < mesh.conn.num_edges(i); ++c) {
+				corner_post(i, c);
+			}
 		}
 		prog.end();
 	}

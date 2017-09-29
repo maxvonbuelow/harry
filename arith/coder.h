@@ -7,8 +7,6 @@
 
 #include "bitstream.h"
 
-#include <fstream> // TODO
-
 namespace arith {
 
 template <typename TF = uint64_t>
@@ -124,10 +122,8 @@ struct Decoder : Coder<TF> {
 		return std::min(t - 1, D / r);
 	}
 
-	int lineno = 0;
 	void operator()(TF l, TF h, TF t)
 	{
-		++lineno;
 		// r already set by decode_target
 		D = D - r * l;
 		if (h < t)

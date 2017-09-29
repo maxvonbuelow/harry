@@ -28,7 +28,7 @@ FileType get_mesh_type(const std::string &fn)
 	throw std::runtime_error("Unknown file extension");
 }
 
-void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN)
+void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN, bool ply_ascii = false)
 {
 	std::string dir = fn.substr(0, fn.find_last_of("/\\"));
 	type = type == UNKNOWN ? get_mesh_type(fn) : type;
@@ -38,7 +38,7 @@ void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType t
 		hry::writer::write(os, mesh);
 		break;
 	case PLY:
-		ply::writer::write(os, mesh, true);
+		ply::writer::write(os, mesh, ply_ascii);
 		break;
 	case OBJ:
 		obj::writer::write(os, dir, mesh);
@@ -47,10 +47,10 @@ void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType t
 		throw std::runtime_error("Currently unimplemented");
 	}
 }
-void write(const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN)
+void write(const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN, bool ply_ascii = false)
 {
 	std::ofstream os(fn, std::ofstream::binary);
-	write(os, fn, mesh, type);
+	write(os, fn, mesh, type, ply_ascii);
 }
 
 }

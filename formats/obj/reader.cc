@@ -42,8 +42,10 @@ struct OBJReader {
 	OBJReader(mesh::Builder &_builder) : builder(_builder),
 		attr_lists{ { IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL } },
 		vtx_reg{ IR, IR, IR, IR, IR },
-		face_reg{ IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR,
-		          IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR }
+		face_reg{ IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR,
+		          IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR,
+		          IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR,
+		          IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR }
 	{
 	}
 
