@@ -21,7 +21,7 @@ If you decide to use our code or code based on this project in your application,
 	title = {Compression of Non-Manifold Polygonal Meshes Revisited},
 	author = {Max von Buelow, Stefan Guthe and Michael Goesele},
 	booktitle = {Proceedings of the Conference on Vision, Modeling and Visualization},
-	series = {VMV '17},
+	series = {VMV},
 	year = {2017},
 	month = {September}
 }
@@ -38,4 +38,4 @@ For requests not matching the above, please contact the maintainer at max.von.bu
 
 Project Page
 ------
-[GCC, TU Darmstadt](http://www.gcc.tu-darmstadt.de/home/proj/meshcomp).
+[GCC, TU Darmstadt](http://www.gcc.tu-darmstadt.de/home/proj/meshcomp)
