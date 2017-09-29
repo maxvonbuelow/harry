@@ -1,5 +1,6 @@
 #include "reader.h"
 
+#include "common.h"
 #include "cbm_decoder.h"
 #include "io.h"
 #include "../../progress.h"
@@ -18,6 +19,10 @@ struct HeaderReader {
 		uint32_t faffafaf;
 		is.read((char*)&faffafaf, sizeof(uint32_t));
 		if (faffafaf != htobe32(0xfaffafaf)) throw std::runtime_error("Invalid magic number");
+		uint8_t ver[2];
+		is.read((char*)ver, 2);
+		if (ver[0] != hry::VER_MAJ) throw std::runtime_error(std::string("File format version ") + std::to_string(ver[0]) + "." + std::to_string(ver[1]) + " incompatible to decoder format version " + std::to_string(hry::VER_MAJ) + "." + std::to_string(hry::VER_MIN));
+		if (ver[0] == 0 && ver[1] != hry::VER_MIN) throw std::runtime_error(std::string("File format version ") + std::to_string(ver[0]) + "." + std::to_string(ver[1]) + " incompatible to decoder format version " + std::to_string(hry::VER_MAJ) + "." + std::to_string(hry::VER_MIN) + " (All 0.x-versions are incompatible to each other)");
 	}
 
 	void read_syntax(mesh::Builder &builder)
@@ -106,7 +111,7 @@ struct HeaderReader {
 				}
 			}
 			mesh::listidx_t l = builder.add_list(fmt, interps, targets[i]);
-			builder.alloc_attr(l, s+200);
+			builder.alloc_attr(l, s+200); // TODO TODO TODO TODO!!!
 			is.read((char*)builder.mesh.attrs[l].min().data(), builder.mesh.attrs[l].min().bytes()); // TODO
 			is.read((char*)builder.mesh.attrs[l].max().data(), builder.mesh.attrs[l].max().bytes()); // TODO
 		}

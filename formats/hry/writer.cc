@@ -2,6 +2,7 @@
 
 #include <thread>
 
+#include "common.h"
 #include "cbm_encoder.h"
 #include "io.h"
 #include "../../progress.h"
@@ -18,7 +19,9 @@ struct HeaderWriter {
 	void write_magic()
 	{
 		uint32_t faffafaf = htobe32(0xfaffafaf);
-		os.write((char*)&faffafaf, sizeof(uint32_t));
+		os.write((char*)&faffafaf, 4);
+		uint8_t ver[] = { hry::VER_MAJ, hry::VER_MIN };
+		os.write((char*)ver, 2);
 	}
 
 	void write_syntax(mesh::Mesh &mesh)
