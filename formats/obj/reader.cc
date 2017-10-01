@@ -256,17 +256,6 @@ void read(std::istream &is, const std::string &dir, mesh::Mesh &mesh)
 
 	std::cout << "Used face regions: " << mesh.attrs.num_regs_face() << std::endl;
 	std::cout << "Used vertex regions: " << mesh.attrs.num_regs_vtx() << std::endl;
-
-// 	for (int i = 0; i < mesh.attrs.size(); ++i) {
-// 		std::cout << "Format attr " << i << std::endl;
-// 		for (int j = 0; j < mesh.attrs[i].fmt().size(); ++j) {
-// 			std::cout << mesh.attrs[i].fmt().type(j) << ":" << mesh.attrs[i].fmt().quant(j) << std::endl;
-// 		}
-// 		std::cout << "Interps attr " << i << std::endl;
-// 		for (int j = 0; j < mesh.attrs[i].interps().size(); ++j) {
-// 			std::cout << mesh.attrs[i].interps().off(j) << "." << mesh.attrs[i].interps().len(j) << std::endl;
-// 		}
-// 	}
 }
 
 }
