@@ -1,5 +1,13 @@
 #pragma once
 
+/*
+ * Implementation of the Cut-Border Machine.
+ *
+ * Related publications:
+ * Gumhold, Stefan, and Wolfgang Straßer. "Real time compression of triangle mesh connectivity." Proceedings of the 25th annual conference on Computer graphics and interactive techniques. ACM, 1998.
+ * Gumhold, Stefan. "Improved cut-border machine for triangle mesh compression." Erlangen Workshop. Vol. 99. 1999.
+ */
+
 #include <unordered_set>
 #include <vector>
 #include <cmath>

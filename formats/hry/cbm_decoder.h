@@ -1,5 +1,13 @@
 #pragma once
 
+/*
+ * Implementation of the Cut-Border Machine.
+ *
+ * Related publications:
+ * Gumhold, Stefan, and Wolfgang Straßer. "Real time compression of triangle mesh connectivity." Proceedings of the 25th annual conference on Computer graphics and interactive techniques. ACM, 1998.
+ * Gumhold, Stefan. "Improved cut-border machine for triangle mesh compression." Erlangen Workshop. Vol. 99. 1999.
+ */
+
 #include <vector>
 #include <cmath>
 #include <iostream>
@@ -24,7 +32,7 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 
 	int nm = 0;
 
-	CutBorder<CoderData> cutBorder(100 + 20000, 10 * sqrt(builder.num_vtx()) + 10000000);
+	CutBorder<CoderData> cutBorder(100 + 20000, 10 * sqrt(builder.num_vtx()) + 10000000); // TODO: Use stack
 	std::vector<int> order(builder.num_vtx(), 0);
 
 	int vertexIdx = 0;
