@@ -5,39 +5,43 @@
 #include "transform.h"
 #include "prediction.h"
 
-#include <thread> // TODO
-#include <chrono> // TODO
-
 namespace attrcode {
 
 // using namespace mesh;
 // using namespace attr;
 // 
-// struct GlobalHistory {
-// 	std::vector<offset_t> attr_transmitted;
-// 	offset_t cur_tidx;
-// 
-// 	GlobalHistory() : cur_tidx(0)
-// 	{}
-// 
-// 	void resize(offset_t size)
-// 	{
-// 		attr_transmitted.resize(size, unset());
-// 	}
-// 
-// 	void set(offset_t idx)
-// 	{
-// 		attr_transmitted[idx] = cur_tidx++;
-// 	}
-// 	offset_t get(offset_t idx)
-// 	{
-// 		return attr_transmitted[idx];
-// 	}
-// 	offset_t unset()
-// 	{
-// 		return std::numeric_limits<offset_t>::max();
-// 	}
-// };
+static const mesh::attridx_t UNSET = std::numeric_limits<mesh::attridx_t>::max();
+struct GlobalHistory {
+	std::vector<mesh::attridx_t> tidxlist;
+	mesh::attridx_t tidx;
+
+	GlobalHistory() : tidx(0)
+	{}
+
+	void resize(mesh::attridx_t size)
+	{
+		tidxlist.resize(size, UNSET);
+	}
+
+	void set(mesh::attridx_t idx)
+	{
+		tidxlist[idx] = tidx++;
+	}
+	mesh::attridx_t gget(mesh::attridx_t idx)
+	{
+		return tidxlist[idx];
+	}
+	mesh::attridx_t lget_set(mesh::attridx_t idx)
+	{
+		mesh::attridx_t g = gget(idx);
+		if (g == UNSET) {
+			set(idx);
+			return UNSET;
+		} else {
+			return tidx - 1 - g;
+		}
+	}
+};
 // 
 // 
 // struct LocalHistory {
@@ -283,16 +287,16 @@ template <typename WR>
 struct AttrCoder : AbsAttrCoder {
 	mesh::Mesh &mesh;
 	WR &wr;
-// 	std::vector<GlobalHistory> ghist;
+	std::vector<GlobalHistory> ghist;
 // 	std::vector<LocalHistory> lhist;
 	std::vector<mesh::conn::fepair> order;
 	std::vector<mesh::conn::fepair> order_f;
 
-	AttrCoder(mesh::Mesh &_mesh, WR &_wr) : mesh(_mesh), wr(_wr), AbsAttrCoder(_mesh)/*, ghist(mesh.attrs.size()), lhist(mesh.attrs.size_wedge)*/
+	AttrCoder(mesh::Mesh &_mesh, WR &_wr) : mesh(_mesh), wr(_wr), AbsAttrCoder(_mesh), ghist(_mesh.attrs.size())/*, lhist(mesh.attrs.size_wedge)*/
 	{
-// 		for (ref_t i = 0; i < mesh.attrs.size(); ++i) {
-// 			ghist[i].resize(mesh.attrs[i].size());
-// 		}
+		for (mesh::listidx_t i = 0; i < mesh.attrs.size(); ++i) {
+			ghist[i].resize(mesh.attrs[i].size());
+		}
 // 		for (offset_t i = 0; i < mesh.attrs.size_wedge; ++i) {
 // 			lhist[i].resize(mesh.attrs.num_vtx());
 // 		}
@@ -320,10 +324,16 @@ struct AttrCoder : AbsAttrCoder {
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
+			mesh::attridx_t idx = mesh.attrs.binding_vtx_attr(v, a);
+			mesh::attridx_t tidx = ghist[l].lget_set(idx);
 
-			mixing::View res = mesh.attrs[l].accu()[0];
-			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_vtx_attr(v, a)], res);
-			wr.attr_data(res, l);
+			if (tidx == UNSET) {
+				mixing::View res = mesh.attrs[l].accu()[0];
+				res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
+				wr.attr_data(res, l);
+			} else {
+				wr.attr_ghist(tidx, l);
+			}
 		}
 	}
 	void face_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -335,10 +345,16 @@ struct AttrCoder : AbsAttrCoder {
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_face_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_facelist(r, a);
+			mesh::attridx_t idx = mesh.attrs.binding_face_attr(f, a);
+			mesh::attridx_t tidx = ghist[l].lget_set(idx);
 
-			mixing::View res = mesh.attrs[l].accu()[0];
-			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_face_attr(f, a)], res);
-			wr.attr_data(res, l);
+			if (tidx == UNSET) {
+				mixing::View res = mesh.attrs[l].accu()[0];
+				res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
+				wr.attr_data(res, l);
+			} else {
+				wr.attr_ghist(tidx, l);
+			}
 		}
 	}
 	void corner_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -349,10 +365,16 @@ struct AttrCoder : AbsAttrCoder {
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_corner_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_cornerlist(r, a);
+			mesh::attridx_t idx = mesh.attrs.binding_corner_attr(f, le, a);
+			mesh::attridx_t tidx = ghist[l].lget_set(idx);
 
-			mixing::View res = mesh.attrs[l].accu()[0];
-			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][mesh.attrs.binding_corner_attr(f, le, a)], res);
-			wr.attr_data(res, l);
+			if (tidx == UNSET) {
+				mixing::View res = mesh.attrs[l].accu()[0];
+				res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
+				wr.attr_data(res, l);
+			} else {
+				wr.attr_ghist(tidx, l);
+			}
 		}
 	}
 
@@ -489,14 +511,21 @@ struct AttrDecoder : AbsAttrCoder {
 
 		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = builder.mesh.attrs.binding_reg_vtxlist(r, a);
+			mesh::attridx_t idx;
 
-			mesh::attridx_t attridx = cur_idx[l]++;
-			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+			switch (rd.attr_type(l)) {
+			case DATA:
+				idx = cur_idx[l]++;
+				rd.attr_data(builder.mesh.attrs[l][idx], l);
 
-			builder.bind_vtx_attr(v, a, attridx);
+				mesh.attrs[l][idx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][idx], mesh.attrs[l].accu()[0]);
+				break;
+			case HIST:
+				idx = cur_idx[l] - 1 - rd.attr_ghist(l);
+				break;
+			}
 
-			mixing::View pred = mesh.attrs[l].accu()[0];
-			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
+			builder.bind_vtx_attr(v, a, idx);
 		}
 	}
 
@@ -513,14 +542,21 @@ struct AttrDecoder : AbsAttrCoder {
 
 		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_face_reg(r); ++a) {
 			mesh::listidx_t l = builder.mesh.attrs.binding_reg_facelist(r, a);
+			mesh::attridx_t idx;
 
-			mesh::attridx_t attridx = cur_idx[l]++;
-			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+			switch (rd.attr_type(l)) {
+			case DATA:
+				idx = cur_idx[l]++;
+				rd.attr_data(builder.mesh.attrs[l][idx], l);
 
-			builder.bind_face_attr(f, a, attridx);
+				mesh.attrs[l][idx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][idx], mesh.attrs[l].accu()[0]);
+				break;
+			case HIST:
+				idx = cur_idx[l] - 1 - rd.attr_ghist(l);
+				break;
+			}
 
-			mixing::View pred = mesh.attrs[l].accu()[0];
-			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
+			builder.bind_face_attr(f, a, idx);
 		}
 	}
 	void corner_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -531,14 +567,24 @@ struct AttrDecoder : AbsAttrCoder {
 
 		for (mesh::listidx_t a = 0; a < builder.mesh.attrs.num_bindings_corner_reg(r); ++a) {
 			mesh::listidx_t l = builder.mesh.attrs.binding_reg_cornerlist(r, a);
+			mesh::attridx_t idx;
 
-			mesh::attridx_t attridx = cur_idx[l]++;
-			rd.attr_data(builder.mesh.attrs[l][attridx], l);
+			switch (rd.attr_type(l)) {
+			case DATA:
+				idx = cur_idx[l]++;
+				rd.attr_data(builder.mesh.attrs[l][idx], l);
 
-			builder.bind_corner_attr(f, le, a, attridx);
+				mesh.attrs[l][idx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][idx], mesh.attrs[l].accu()[0]);
+				break;
+			case HIST:
+				idx = cur_idx[l] - 1 - rd.attr_ghist(l);
+				break;
+			case LHIST:
+				// TODO
+				break;
+			}
 
-			mixing::View pred = mesh.attrs[l].accu()[0];
-			mesh.attrs[l][attridx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][attridx], pred);
+			builder.bind_corner_attr(f, le, a, idx);
 		}
 	}
 

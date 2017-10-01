@@ -10,14 +10,11 @@ void write(std::ostream &os, const std::string &dir, mesh::Mesh &mesh)
 {
 	os << "# decompressed using harry mesh compressor" << std::endl << std::endl;
 
-	std::cout << "Test: " << mesh.attrs.size() << " "<<mixing::TEX << std::endl;
-	std::cout << "Test: " << mesh.attrs[0].interps().len(mixing::TEX) << std::endl;
-	std::cout << "Test: " << mesh.attrs[1].interps().len(mixing::TEX) << std::endl;
 	std::vector<bool> isset_pos(mesh.attrs.size(), false), isset_tex(mesh.attrs.size(), false), isset_normal(mesh.attrs.size(), false);
 	for (int i = 0; i < mesh.attrs.num_regs_face(); ++i) {
 		for (int j = 0; j < mesh.attrs.num_bindings_corner_reg(i); ++j) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_cornerlist(i, j);
-			if (mesh.attrs[l].interps().has(mixing::TEX)) {isset_tex[l] = true; std::cout <<"here "<< l << " "<< mesh.attrs[l].interps().off(mixing::TEX)<< " " << mesh.attrs[l].interps().len(mixing::TEX) << std::endl; }
+			if (mesh.attrs[l].interps().has(mixing::TEX)) isset_tex[l] = true;
 			if (mesh.attrs[l].interps().has(mixing::NORMAL)) isset_normal[l] = true;
 		}
 	}
@@ -59,7 +56,6 @@ void write(std::ostream &os, const std::string &dir, mesh::Mesh &mesh)
 		tex_off[j] = last;
 		last += mesh.attrs[j].size();
 		const mixing::Interps &in = mesh.attrs[j].interps();
-		std::cout << "texture size: " << j << ": " << mesh.attrs[j].size() << " ts: " << in.len(mixing::TEX) << std::endl;
 		for (int i = 0; i < mesh.attrs[j].size(); ++i) {
 			mixing::View e = mesh.attrs[j][i];
 
@@ -80,7 +76,6 @@ void write(std::ostream &os, const std::string &dir, mesh::Mesh &mesh)
 		normal_off[j] = last;
 		last += mesh.attrs[j].size();
 		const mixing::Interps &in = mesh.attrs[j].interps();
-		std::cout << "nrom size: " << j << ": " << mesh.attrs[j].size() << std::endl;
 		for (int i = 0; i < mesh.attrs[j].size(); ++i) {
 			mixing::View e = mesh.attrs[j][i];
 			os << "vn ";

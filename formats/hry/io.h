@@ -6,8 +6,6 @@
 
 namespace io {
 
-enum AttrType { DATA, HIST, LHIST };
-
 struct writer {
 	HryModels &models;
 	arith::Encoder<> &coder;
@@ -81,7 +79,22 @@ struct writer {
 	// Attributes
 	void attr_data(mixing::View e, mesh::listidx_t l)
 	{
+		attr_type(DATA, l);
 		models.attr_data[l]->enc(coder, e);
+	}
+	void attr_type(AttrType type, mesh::listidx_t l)
+	{
+		models.attr_type[l]->template encode<uint8_t>(coder, type);
+	}
+	void attr_ghist(uint32_t idx, mesh::listidx_t l)
+	{
+		attr_type(HIST, l);
+		models.attr_ghist[l]->template encode<uint32_t>(coder, idx);
+	}
+	void attr_lhist(uint16_t idx, mesh::listidx_t l)
+	{
+		attr_type(LHIST, l);
+		models.attr_lhist[l]->template encode<uint16_t>(coder, idx);
 	}
 	void reg_face(mesh::regidx_t r)
 	{
@@ -184,6 +197,18 @@ struct reader {
 	void attr_data(mixing::View e, mesh::listidx_t l)
 	{
 		models.attr_data[l]->dec(coder, e);
+	}
+	AttrType attr_type(mesh::listidx_t l)
+	{
+		return (AttrType)models.attr_type[l]->template decode<uint8_t>(coder);
+	}
+	uint32_t attr_ghist(mesh::listidx_t l)
+	{
+		models.attr_ghist[l]->template decode<uint32_t>(coder);
+	}
+	uint16_t attr_lhist(mesh::listidx_t l)
+	{
+		models.attr_lhist[l]->template decode<uint16_t>(coder);
 	}
 	mesh::regidx_t reg_face()
 	{

@@ -111,7 +111,7 @@ struct HeaderReader {
 				}
 			}
 			mesh::listidx_t l = builder.add_list(fmt, interps, targets[i]);
-			builder.alloc_attr(l, s+200); // TODO TODO TODO TODO!!!
+			builder.alloc_attr(l, s);
 			is.read((char*)builder.mesh.attrs[l].min().data(), builder.mesh.attrs[l].min().bytes()); // TODO
 			is.read((char*)builder.mesh.attrs[l].max().data(), builder.mesh.attrs[l].max().bytes()); // TODO
 		}
@@ -141,10 +141,8 @@ void read(std::istream &is, mesh::Mesh &mesh)
 	cbm::decode(builder, rd, ac, prog);
 	progress::handle proga;
 	ac.decode(proga);
-	std::cout << "fin" << std::endl;
 
 	builder.finished_rev();
-	std::cout << "fin2" << std::endl;
 }
 
 }

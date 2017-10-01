@@ -1,7 +1,5 @@
 #include "writer.h"
 
-#include <thread>
-
 #include "common.h"
 #include "cbm_encoder.h"
 #include "io.h"

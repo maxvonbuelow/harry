@@ -6,6 +6,8 @@
 #include "../../arith/model.h"
 #include "../../arith/stat_adaptive.h"
 
+enum AttrType { DATA, HIST, LHIST };
+
 template <typename TF = uint64_t>
 struct CBMInitModel : arith::Model<TF> {
 	arith::AdaptiveStatisticsModule<> stat;
@@ -175,12 +177,20 @@ struct HryModels {
 	arith::ModelMult<uint16_t, arith::AdaptiveStatisticsModule<>> conn_numtri;
 	arith::ModelMult<uint16_t, arith::AdaptiveStatisticsModule<>> conn_regface, conn_regvtx;
 
+	std::vector<arith::ModelMult<uint8_t, arith::AdaptiveStatisticsModule<>>*> attr_type;
+	std::vector<arith::ModelMult<uint32_t, arith::AdaptiveStatisticsModule<>>*> attr_ghist;
+	std::vector<arith::ModelMult<uint16_t, arith::AdaptiveStatisticsModule<>>*> attr_lhist;
 	std::vector<ModelVector<arith::AdaptiveStatisticsModule<>>*> attr_data;
 
 	HryModels(mesh::Mesh &mesh) :
 		conn_numtri(false), conn_regface(false), conn_regvtx(false)
 	{
 		for (int i = 0; i < mesh.attrs.size(); ++i) {
+			attr_type.push_back(new arith::ModelMult<uint8_t, arith::AdaptiveStatisticsModule<>>(false));
+			attr_type.back()->init(DATA); attr_type.back()->init(HIST);
+			if (mesh.attrs[i].target == mesh::attr::CORNER) attr_type.back()->init(LHIST);
+			attr_ghist.push_back(new arith::ModelMult<uint32_t, arith::AdaptiveStatisticsModule<>>());
+			attr_lhist.push_back(new arith::ModelMult<uint16_t, arith::AdaptiveStatisticsModule<>>());
 			attr_data.push_back(new ModelVector<arith::AdaptiveStatisticsModule<>>(mesh.attrs[i].fmt()));
 		}
 
@@ -201,6 +211,9 @@ struct HryModels {
 	~HryModels()
 	{
 		for (int i = 0; i < attr_data.size(); ++i) {
+			delete attr_type[i];
+			delete attr_ghist[i];
+			delete attr_lhist[i];
 			delete attr_data[i];
 		}
 	}
