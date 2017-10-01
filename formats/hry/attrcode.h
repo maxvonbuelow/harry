@@ -1,15 +1,11 @@
 #pragma once
 
 #include "io.h"
-
 #include "transform.h"
 #include "prediction.h"
 
 namespace attrcode {
 
-// using namespace mesh;
-// using namespace attr;
-// 
 static const mesh::attridx_t UNSET = std::numeric_limits<mesh::attridx_t>::max();
 struct GlobalHistory {
 	std::vector<mesh::attridx_t> tidxlist;
@@ -42,34 +38,33 @@ struct GlobalHistory {
 		}
 	}
 };
-// 
-// 
-// struct LocalHistory {
-// 	std::vector<std::vector<ref_t>> hist; // TODO: this results in a vector<vector<vector<X>>>, reduce this to max 2 containers
-// 
-// 	void resize(vtxidx_t size)
-// 	{
-// 		hist.resize(size);
-// 	}
-// 
-// 	bool empty(vtxidx_t v)
-// 	{
-// 		return hist[v].empty();
-// 	}
-// 
-// 	int insert(vtxidx_t v, ref_t a)
-// 	{
-// 		for (int i = 0; i < hist[v].size(); ++i) {
-// 			if (hist[v][i] == a) return i;
-// 		}
-// 		hist[v].push_back(a);
-// 		return -1;
-// 	}
-// 	ref_t find(vtxidx_t v, int off)
-// 	{
-// 		return hist[v][off];
-// 	}
-// };
+struct LocalHistory {
+	std::vector<std::vector<mesh::attridx_t>> hist; // TODO: this results in a vector<vector<vector<X>>>, reduce this to max 2 containers
+
+	void resize(mesh::vtxidx_t size)
+	{
+		hist.resize(size);
+	}
+
+	bool empty(mesh::vtxidx_t v)
+	{
+		return hist[v].empty();
+	}
+
+	mesh::attridx_t insert(mesh::vtxidx_t v, mesh::attridx_t idx)
+	{
+		for (mesh::attridx_t i = 0; i < hist[v].size(); ++i) {
+			if (hist[v][i] == idx) return hist[v].size() - 1 - i;
+		}
+		hist[v].push_back(idx);
+		return UNSET;
+	}
+
+	mesh::attridx_t find(mesh::vtxidx_t v, mesh::attridx_t off)
+	{
+		return hist[v][hist[v].size() - 1 - off];
+	}
+};
 
 // This is why my collegues hate me:
 #define TFAN_IT(CB) \
@@ -272,8 +267,6 @@ struct AbsAttrCoder {
 		face_is_encoded[f] = false;
 		tfan_corner(e, r);
 		face_is_encoded[f] = true;
-// 		curhist = 0;
-// 		std::cout << curhist << std::endl;
 		int num_hist = curhist;
 
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_corner_reg(r); ++a) {
@@ -288,18 +281,18 @@ struct AttrCoder : AbsAttrCoder {
 	mesh::Mesh &mesh;
 	WR &wr;
 	std::vector<GlobalHistory> ghist;
-// 	std::vector<LocalHistory> lhist;
+	std::vector<LocalHistory> lhist;
 	std::vector<mesh::conn::fepair> order;
 	std::vector<mesh::conn::fepair> order_f;
 
-	AttrCoder(mesh::Mesh &_mesh, WR &_wr) : mesh(_mesh), wr(_wr), AbsAttrCoder(_mesh), ghist(_mesh.attrs.size())/*, lhist(mesh.attrs.size_wedge)*/
+	AttrCoder(mesh::Mesh &_mesh, WR &_wr) : mesh(_mesh), wr(_wr), AbsAttrCoder(_mesh), ghist(_mesh.attrs.size()), lhist(mesh.attrs.num_bindings_corner)
 	{
 		for (mesh::listidx_t i = 0; i < mesh.attrs.size(); ++i) {
 			ghist[i].resize(mesh.attrs[i].size());
 		}
-// 		for (offset_t i = 0; i < mesh.attrs.size_wedge; ++i) {
-// 			lhist[i].resize(mesh.attrs.num_vtx());
-// 		}
+		for (mesh::listidx_t i = 0; i < mesh.attrs.num_bindings_corner; ++i) {
+			lhist[i].resize(mesh.attrs.num_vtx());
+		}
 	}
 
 	void vtx(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -325,15 +318,16 @@ struct AttrCoder : AbsAttrCoder {
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_vtx_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_vtxlist(r, a);
 			mesh::attridx_t idx = mesh.attrs.binding_vtx_attr(v, a);
-			mesh::attridx_t tidx = ghist[l].lget_set(idx);
 
-			if (tidx == UNSET) {
-				mixing::View res = mesh.attrs[l].accu()[0];
-				res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
-				wr.attr_data(res, l);
-			} else {
+			mesh::attridx_t tidx = ghist[l].lget_set(idx);
+			if (tidx != UNSET) {
 				wr.attr_ghist(tidx, l);
+				continue;
 			}
+
+			mixing::View res = mesh.attrs[l].accu()[0];
+			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
+			wr.attr_data(res, l);
 		}
 	}
 	void face_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -346,15 +340,16 @@ struct AttrCoder : AbsAttrCoder {
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_face_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_facelist(r, a);
 			mesh::attridx_t idx = mesh.attrs.binding_face_attr(f, a);
-			mesh::attridx_t tidx = ghist[l].lget_set(idx);
 
-			if (tidx == UNSET) {
-				mixing::View res = mesh.attrs[l].accu()[0];
-				res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
-				wr.attr_data(res, l);
-			} else {
+			mesh::attridx_t tidx = ghist[l].lget_set(idx);
+			if (tidx != UNSET) {
 				wr.attr_ghist(tidx, l);
+				continue;
 			}
+
+			mixing::View res = mesh.attrs[l].accu()[0];
+			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
+			wr.attr_data(res, l);
 		}
 	}
 	void corner_post(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -366,15 +361,22 @@ struct AttrCoder : AbsAttrCoder {
 		for (mesh::listidx_t a = 0; a < mesh.attrs.num_bindings_corner_reg(r); ++a) {
 			mesh::listidx_t l = mesh.attrs.binding_reg_cornerlist(r, a);
 			mesh::attridx_t idx = mesh.attrs.binding_corner_attr(f, le, a);
-			mesh::attridx_t tidx = ghist[l].lget_set(idx);
 
-			if (tidx == UNSET) {
-				mixing::View res = mesh.attrs[l].accu()[0];
-				res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
-				wr.attr_data(res, l);
-			} else {
-				wr.attr_ghist(tidx, l);
+			mesh::attridx_t lidx = lhist[a].insert(mesh.conn.org(f, le), idx);
+			if (lidx != UNSET) {
+				wr.attr_lhist(lidx, l);
+				continue;
 			}
+
+			mesh::attridx_t tidx = ghist[l].lget_set(idx);
+			if (tidx != UNSET) {
+				wr.attr_ghist(tidx, l);
+				continue;
+			}
+
+			mixing::View res = mesh.attrs[l].accu()[0];
+			res.setq([] (int q, const auto raw, const auto pred) { return pred::encodeDelta(raw, pred, q); }, mesh.attrs[l][idx], res);
+			wr.attr_data(res, l);
 		}
 	}
 
@@ -393,7 +395,6 @@ struct AttrCoder : AbsAttrCoder {
 			face_post(e.f(), e.e());
 			int ne = mesh.conn.num_edges(e.f()), c = e.e();
 			do {
-// 				std::cout  << e.f() << ": " << c << std::endl;
 				corner_post(e.f(), c);
 				++c;
 				if (c == ne) c = 0;
@@ -401,97 +402,24 @@ struct AttrCoder : AbsAttrCoder {
 		}
 		prog.end();
 	}
-
-// 	void face(faceidx_t f)
-// 	{
-// 		regidx_t rf = mesh.attrs.face2reg(f);
-// 		wr.reg_face(rf);
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_face(rf); ++a) {
-// 			ref_t as = mesh.attrs.binding_face(rf, a);
-// 			ref_t attridx = mesh.attrs.attr_face(f, a);
-// 			offset_t tidx = ghist[as].get(attridx);
-// 			if (tidx == ghist[as].unset()) {
-// 				ghist[as].set(attridx);
-// 				MElm ef = mesh.attrs[as][attridx];
-// 				wr.faceabs(ef, as);
-// 			} else {
-// 				wr.facehist(tidx, as); // TODO: send negative offsets
-// 			}
-// 		}
-// 	}
-// 	void face(faceidx_t f, faceidx_t o)
-// 	{
-// 		regidx_t rf = mesh.attrs.face2reg(f), ro = mesh.attrs.face2reg(o);
-// 		wr.reg_face(rf);
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_face(rf); ++a) {
-// 			ref_t as = mesh.attrs.binding_face(rf, a);
-// 			ref_t attridx = mesh.attrs.attr_face(f, a);
-// 			offset_t tidx = ghist[as].get(attridx);
-// 			if (tidx == ghist[as].unset()) {
-// 				ghist[as].set(attridx);
-// 				MElm ef = mesh.attrs[as][attridx];
-// 				if (rf == ro) {
-// 					MElm eo = mesh.attrs[as][mesh.attrs.attr_face(o, a)];
-// 					MElm c = mesh.attrs[as].special(0);
-// 					c.set([] (auto fdv, auto fdneighv) { return xor_all(float2int_all(fdv), float2int_all(fdneighv)); }, ef, eo);
-// 					wr.facediff(c, as);
-// 				} else {
-// 					wr.faceabs(ef, as);
-// 				}
-// 			} else {
-// 				wr.facehist(tidx, as); // TODO: send negative offsets
-// 			}
-// 		}
-// 	}
-// 	void wedge(faceidx_t f, lvtxidx_t v, vtxidx_t gv)
-// 	{
-// 		regidx_t rf = mesh.attrs.face2reg(f);
-// 		for (offset_t a = 0; a < mesh.attrs.num_attr_wedge(rf); ++a) {
-// 			ref_t as = mesh.attrs.binding_wedge(rf, a);
-// 			ref_t attridx = mesh.attrs.attr_wedge(f, v, a);
-// 			bool lempty = lhist[a].empty(gv);
-// 			int loff = lhist[a].insert(gv, attridx);
-// 			if (loff != -1) {
-// 				wr.wedgelhist(loff, as);
-// 				continue;
-// 			}
-// 			offset_t tidx = ghist[as].get(attridx);
-// 			if (tidx == ghist[as].unset()) {
-// 				ghist[as].set(attridx);
-// 				MElm ew = mesh.attrs[as][attridx];
-// 				if (lempty) {
-// 					wr.wedgeabs(ew, as);
-// 				} else {
-// 					MElm c = mesh.attrs[as].special(0);
-// 					MElm eo = mesh.attrs[as][lhist[a].find(gv, 0)];
-// 					c.set([] (auto av, auto aoldv) { return xor_all(float2int_all(av), float2int_all(aoldv)); }, ew, eo);
-// 					// TODO
-// 					wr.wedgediff(c, as);
-// 				}
-// 			} else {
-// 				wr.wedgehist(tidx, as); // TODO: send negative offsets
-// 			}
-// 		}
-// 	}
 };
 
 
 template <typename RD>
 struct AttrDecoder : AbsAttrCoder {
-// 	std::vector<LocalHistory> lhist;
 	RD &rd;
+
+	std::vector<LocalHistory> lhist;
 	std::vector<mesh::attridx_t> cur_idx;
 
 	mesh::Builder &builder;
 	std::vector<mesh::conn::fepair> order;
-
-
 	
-	AttrDecoder(mesh::Builder &_builder, RD &_rd) : builder(_builder), rd(_rd), AbsAttrCoder(_builder.mesh)/*, ghist(attrs.size())*//*, lhist(attrs.size_wedge)*/, cur_idx(_builder.mesh.attrs.size(), 0)
+	AttrDecoder(mesh::Builder &_builder, RD &_rd) : builder(_builder), rd(_rd), AbsAttrCoder(_builder.mesh), lhist(mesh.attrs.num_bindings_corner), cur_idx(_builder.mesh.attrs.size(), 0)
 	{
-// 		for (offset_t i = 0; i < attrs.size_wedge; ++i) {
-// 			lhist[i].resize(attrs.num_vtx());
-// 		}
+		for (mesh::listidx_t i = 0; i < mesh.attrs.num_bindings_corner; ++i) {
+			lhist[i].resize(mesh.attrs.num_vtx());
+		}
 	}
 
 	void vtx(mesh::faceidx_t f, mesh::ledgeidx_t le)
@@ -575,12 +503,14 @@ struct AttrDecoder : AbsAttrCoder {
 				rd.attr_data(builder.mesh.attrs[l][idx], l);
 
 				mesh.attrs[l][idx].setq([] (int q, const auto delta, const auto pred) { return pred::decodeDelta(delta, pred, q); }, mesh.attrs[l][idx], mesh.attrs[l].accu()[0]);
+				lhist[a].insert(mesh.conn.org(f, le), idx);
 				break;
 			case HIST:
 				idx = cur_idx[l] - 1 - rd.attr_ghist(l);
+				lhist[a].insert(mesh.conn.org(f, le), idx);
 				break;
 			case LHIST:
-				// TODO
+				idx = lhist[a].find(mesh.conn.org(f, le), rd.attr_lhist(l));
 				break;
 			}
 
@@ -606,102 +536,6 @@ struct AttrDecoder : AbsAttrCoder {
 		}
 		prog.end();
 	}
-
-// 	void face(faceidx_t f, ledgeidx_t ne)
-// 	{
-// 		regidx_t rf = attrs.face2reg(f) = rd.reg_face();
-// 		attrs.add_face_ne(ne);
-// 		for (offset_t a = 0; a < attrs.num_attr_face(rf); ++a) {
-// 			ref_t as = attrs.binding_face(rf, a);
-// 			ref_t attridx;
-// 			switch (rd.attr_type(as)) {
-// 			case DATA:
-// 				attridx = cur_idx[as]++;
-// 				rd.faceabs(attrs[as][attridx], as);
-// 				break;
-// 			case HIST:
-// 				attridx = rd.facehist(as);
-// 				break;
-// 			default:
-// 				// TODO: error
-// 				;
-// 			}
-// 			attrs.attr_face(f, a) = attridx;
-// 		}
-// 	}
-// 	void face(faceidx_t f, faceidx_t o, ledgeidx_t ne)
-// 	{
-// 		regidx_t rf = attrs.face2reg(f) = rd.reg_face(), ro = attrs.face2reg(o);
-// 		attrs.add_face_ne(ne); // TODO
-// 		for (offset_t a = 0; a < attrs.num_attr_face(rf); ++a) {
-// 			ref_t as = attrs.binding_face(rf, a);
-// 			ref_t attridx;
-// 			switch (rd.attr_type(as)) {
-// 			case DATA: {
-// 				attridx = cur_idx[as]++;
-// 				MElm ef = attrs[as][attridx];
-// 				if (rf == ro) {
-// 					MElm eo = attrs[as][attrs.attr_face(o, a)];
-// 					rd.facediff(ef, as);
-// 					ef.set([] (auto err, auto vneighv) { return int2float_all(xor_all(err, float2int_all(vneighv, sizeof(vneighv) << 3))); }, ef, eo);
-// 				} else {
-// 					rd.faceabs(ef, as);
-// 				}
-// 				break;}
-// 			case HIST:
-// 				attridx = rd.facehist(as);
-// 				break;
-// 			default:
-// 				// TODO: error
-// 				;
-// 			}
-// 			attrs.attr_face(f, a) = attridx;
-// 		}
-// 	}
-// 	void wedge(faceidx_t f, lvtxidx_t v, vtxidx_t gv)
-// 	{
-// // 		std::cout << "sf1" << std::endl;
-// 		regidx_t rf = attrs.face2reg(f); // already set by face(...)
-// 		for (offset_t a = 0; a < attrs.num_attr_wedge(rf); ++a) {
-// // 			std::cout << a << " " << lhist.size() << std::endl;
-// // 			std::cout << "sf2" << std::endl;
-// 			ref_t as = attrs.binding_wedge(rf, a);
-// 			ref_t attridx;
-// 			switch (rd.attr_type(as)) {
-// 			case DATA: {
-// 				attridx = cur_idx[as]++;
-// // 				std::cout << attridx << " " << attrs[as].size() << std::endl;
-// 				MElm ew = attrs[as][attridx];
-// 				if (lhist[a].empty(gv)) {
-// 					rd.wedgeabs(ew, as);
-// 				} else {
-// 					MElm eo = attrs[as][lhist[a].find(gv, 0)];
-// 					rd.wedgediff(ew, as);
-// 					// encoder:
-// // 					c.set([] (auto av, auto aoldv) { return xor_all(float2int_all(av, sizeof(av) << 3), float2int_all(aoldv, sizeof(av) << 3)); }, ew, eo);
-// 
-// 					ew.set([] (auto err, auto aoldv) { return int2float_all(xor_all(err, float2int_all(aoldv, sizeof(err) << 3))); }, ew, eo);
-// 					// TODO
-// 				}
-// 				lhist[a].insert(gv, attridx);
-// 				break;}
-// 			case HIST:
-// 				attridx = rd.wedgehist(as);
-// 				lhist[a].insert(gv, attridx);
-// 				break;
-// 			case LHIST:
-// 				attridx = lhist[a].find(gv, rd.wedgelhist(as));
-// 				break;
-// 			default:
-// 				// TODO: error
-// 				;
-// 			}
-// // 			std::cout << "f: " << f << " v: " << v << " a: " << a << " val: " << attridx << std::endl;
-// 			attrs.attr_wedge(f, v, a) = attridx;
-// // 			std::cout << "sf3" << std::endl;
-// 		}
-// // 		std::cout << "finsf" << std::endl;
-// 	}
 };
 
 }
