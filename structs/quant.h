@@ -111,12 +111,9 @@ inline void requant(mixing::View src, mixing::View min, mixing::View scale, mixi
 			default: throw std::runtime_error("Invalid quantization type");
 			}
 		} else {
-// 			std::cout << "Quantizing " << j << std::endl;
 			switch (src.fmt.stype(j)) {
 			case mixing::FLOAT:
 				q = rescale<float>(src.at<float>(j) - min.at<float>(j), scale.at<float>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1) + 0.5f;
-// 				std::cout << "org: " << src.at<float>(j) << " req: " << rescale<float>(q, (1 << (uint32_t)dst.fmt.quant(j)) - 1, scale.at<float>(j)) + min.at<float>(j) << std::endl;
-// 				q = (src.at<float>(j) - min.at<float>(j)) * 1000;
 				break;
 			case mixing::DOUBLE:
 				q = rescale<double>(src.at<double>(j) - min.at<double>(j), scale.at<double>(j), (1 << (uint64_t)dst.fmt.quant(j)) - 1) + 0.5;
@@ -157,10 +154,8 @@ inline void requant(mixing::View src, mixing::View min, mixing::View scale, mixi
 			default: throw std::runtime_error("Invalid quantization type");
 			}
 		} else {
-// 			std::cout << "Dequantizing " << j << std::endl;
 			switch (dst.fmt.stype(j)) {
 			case mixing::FLOAT:
-// 				std::cout << "Was quant: " << q << " q: " << src.fmt.quant(j) << " sc: " <<scale.at<float>(j)<< " mi: " <<min.at<float>(j)<< std::endl;
 				dst.at<float>(j) = rescale<float>(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<float>(j)) + min.at<float>(j);
 				break;
 			case mixing::DOUBLE:
@@ -201,106 +196,5 @@ inline void requant(mesh::attr::Attr &attr, const mixing::Fmt &fmt)
 		requant(attr[j], attr.min(), attr.scale(), attr.at(j, fmt));
 	}
 }
-
-/*
-void quantize(mixing::View attr, mixing::View min, mixing::View scale, mixing::View dst)
-{
-	for (int j = 0; j < src.fmt.size(); ++j) {
-		if (!dst.fmt.isquant(j)) {
-			std::copy(src.data(j), src.data(j) + src.size(j), dst.data(j));
-			continue;
-		}
-
-		int64_t q;
-		switch (src.fmt.stype(j)) {
-		case mixing::FLOAT:
-			q = rescale<float>(src.at<float>(j) - min().at<float>(j), scale().at<float>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1) + 0.5f;
-			break;
-		case mixing::DOUBLLE:
-			q = rescale<double>(src.at<double>(j) - min().at<double>(j), scale().at<double>(j), (1 << (uint64_t)dst.fmt.quant(j)) - 1) + 0.5;
-			break;
-		case mixing::ULONG:
-			q = rescale<uint64_t>(src.at<uint64_t>(j) - min.at<uint64_t>(j), scale.at<uint64_t>(j), (1 << (uint64_t)dst.fmt.quant(j)) - 1);
-			break;
-		case mixing::LONG:
-			q = rescale<int64_t>(src.at<int64_t>(j) - min.at<int64_t>(j), scale.at<int64_t>(j), (1 << (uint64_t)dst.fmt.quant(j)) - 1);
-			break;
-		case mixing::UINT:
-			q = rescale<uint32_t>(src.at<uint32_t>(j) - min.at<uint32_t>(j), scale.at<uint32_t>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1);
-			break;
-		case mixing::INT:
-			q = rescale<int32_t>(src.at<int32_t>(j) - min.at<int32_t>(j), scale.at<int32_t>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1);
-			break;
-		case mixing::USHORT:
-			q = rescale<uint16_t>(src.at<uint32_t>(j) - min.at<uint16_t>(j), scale.at<uint16_t>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1);
-			break;
-		case mixing::SHORT:
-			q = rescale<int16_t>(src.at<int16_t>(j) - min.at<int16_t>(j), scale.at<int16_t>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1);
-			break;
-		case mixing::UCHAR:
-			q = rescale<uint8_t>(src.at<uint8_t>(j) - min.at<uint8_t>(j), scale.at<uint8_t>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1);
-			break;
-		case mixing::CHAR:
-			q = rescale<int8_t>(src.at<int8_t>(j) - min.at<int8_t>(j), scale.at<int8_t>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1);
-			break;
-		}
-		switch (dst.fmt.stype(j)) {
-		case mixing::ULONG:  dst.at<uint64_t>(j) = q; break;
-		case mixing::UINT:   dst.at<uint32_t>(j) = q; break;
-		case mixing::USHORT: dst.at<uint16_t>(j) = q; break;
-		case mixing::UCHAR:  dst.at<uint8_t>(j)  = q; break;
-		default: throw std::runtime_error("Invalid quantization type");
-		}
-	}
-}
-void dequantize(mixing::View attr, mixing::View min, mixing::View scale, mixing::View dst)
-{
-	for (int j = 0; j < src.fmt.type.size(); ++j) {
-		if (!src.fmt.isquant(j)) {
-			std::copy(src.data(j), src.data(j) + src.size(j), dst.data(j));
-			continue;
-		}
-		int64_t q;
-		switch (src.fmt.stype(j)) {
-		case mixing::ULONG:  q = src.at<uint64_t>(j); break;
-		case mixing::UINT:   q = src.at<uint32_t>(j); break;
-		case mixing::USHORT: q = src.at<uint16_t>(j); break;
-		case mixing::UCHAR:  q = src.at<uint8_t>(j);  break;
-		default: throw std::runtime_error("Invalid quantization type");
-		}
-		switch (dst.fmt.stype(j)) {
-		case mixing::FLOAT:
-			dst.at<float>(j) = rescale(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<float>(j)) + min.at<float>(j);
-			break;
-		case mixing::DOUBLE:
-			dst.at<double>(j) = rescale(q, (1 << (uint64_t)src.fmt.quant(j)) - 1, scale.at<double>(j)) + min.at<double>(j);
-			break;
-		case mixing::ULONG:
-			dst.at<uint64_t>(j) = rescale(q, (1 << (uint64_t)src.fmt.quant(j)) - 1, scale.at<uint64_t>(j)) + min.at<uint64_t>(j);
-			break;
-		case mixing::LONG:
-			dst.at<int64_t>(j) = rescale(q, (1 << (uint64_t)src.fmt.quant(j)) - 1, scale.at<int64_t>(j)) + min.at<int64_t>(j);
-			break;
-		case mixing::UINT:
-			dst.at<uint32_t>(j) = rescale(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<uint32_t>(j)) + min.at<uint32_t>(j);
-			break;
-		case mixing::INT:
-			dst.at<int32_t>(j) = rescale(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<int32_t>(j)) + min.at<int32_t>(j);
-			break;
-		case mixing::USHORT:
-			dst.at<uint16_t>(j) = rescale(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<uint16_t>(j)) + min.at<uint16_t>(j);
-			break;
-		case mixing::SHORT:
-			dst.at<int16_t>(j) = rescale(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<int16_t>(j)) + min.at<int16_t>(j);
-			break;
-		case mixing::UCHAR:
-			dst.at<uint8_t>(j) = rescale(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<uint8_t>(j)) + min.at<uint8_t>(j);
-			break;
-		case mixing::CHAR:
-			dst.at<int8_t>(j) = rescale(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, scale.at<int8_t>(j)) + min.at<int8_t>(j);
-			break;
-		}
-	}
-}*/
 
 }
