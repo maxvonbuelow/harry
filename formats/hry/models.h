@@ -15,6 +15,8 @@
 #include "../../arith/model.h"
 #include "../../arith/stat_adaptive.h"
 
+namespace hry {
+
 enum AttrType { DATA, HIST, LHIST };
 
 template <typename TF = uint64_t>
@@ -232,3 +234,5 @@ struct HryModels {
 		conn_op.order(i);
 	}
 };
+
+}

@@ -14,6 +14,7 @@
 
 #define INVALID_PAIR mesh::conn::fepair()
 
+namespace hry {
 namespace cbm {
 
 struct CoderData {
@@ -46,4 +47,5 @@ struct CBMStats {
 	int nm;
 };
 
+}
 }

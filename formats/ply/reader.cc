@@ -20,6 +20,7 @@
 
 #include "../../structs/mixing.h"
 #include "../../structs/types.h"
+#include "../../structs/quant.h"
 #include "../../utils.h"
 #include "../../progress.h"
 
@@ -360,7 +361,6 @@ void readloop(std::istream &is, const Header &header, const std::vector<int> *pe
 						if (dst != NULL) read(is, dst, prop.type);
 					}
 				}
-				builder.attr_finished(list, j);
 				prog(cur++);
 			}
 		} else {
@@ -377,7 +377,6 @@ void readloop(std::istream &is, const Header &header, const std::vector<int> *pe
 		}
 	}
 	prog.end();
-	builder.finished();
 }
 
 void read(std::istream &is, mesh::Mesh &mesh)
@@ -425,6 +424,8 @@ void read(std::istream &is, mesh::Mesh &mesh)
 		readloop(is, header, perms, builder, BinLEReader());
 		break;
 	}
+
+	quant::set_bounds(mesh.attrs);
 }
 
 }

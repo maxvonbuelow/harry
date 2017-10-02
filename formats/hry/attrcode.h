@@ -13,6 +13,7 @@
 #include "transform.h"
 #include "prediction.h"
 
+namespace hry {
 namespace attrcode {
 
 static const mesh::attridx_t UNSET = std::numeric_limits<mesh::attridx_t>::max();
@@ -547,4 +548,5 @@ struct AttrDecoder : AbsAttrCoder {
 	}
 };
 
+}
 }

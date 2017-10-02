@@ -27,7 +27,7 @@ struct HeaderWriter {
 	{
 		uint32_t faffafaf = htobe32(0xfaffafaf);
 		os.write((char*)&faffafaf, 4);
-		uint8_t ver[] = { hry::VER_MAJ, hry::VER_MIN };
+		uint8_t ver[] = { VER_MAJ, VER_MIN };
 		os.write((char*)ver, 2);
 	}
 

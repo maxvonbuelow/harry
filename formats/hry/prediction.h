@@ -11,6 +11,7 @@
 
 #include "transform.h"
 
+namespace hry {
 namespace pred {
 
 template <typename T>
@@ -28,19 +29,20 @@ T mask(int bits)
 static const uint64_t masks[] = { 0x80ull, 0x8000ull, 0, 0x80000000ull, 0, 0, 0, 0x8000000000000000ull };
 
 template <typename T>
-transform::uint_t<sizeof(T)> int2uint(transform::int_t<sizeof(T)> val)
+uint_t<sizeof(T)> int2uint(int_t<sizeof(T)> val)
 {
-	return ((transform::uint_t<sizeof(T)>)val) ^ masks[sizeof(T)];
+	return ((uint_t<sizeof(T)>)val) ^ masks[sizeof(T)];
 }
 template <typename T>
-transform::int_t<sizeof(T)> uint2int(transform::uint_t<sizeof(T)> val)
+int_t<sizeof(T)> uint2int(uint_t<sizeof(T)> val)
 {
-	return ((transform::int_t<sizeof(T)>)val) ^ masks[sizeof(T)];
+	return ((int_t<sizeof(T)>)val) ^ masks[sizeof(T)];
 }
 
 template <class T>
 T decodeDelta(const T delta, const T pred, const int bits, std::false_type)
 {
+// 	return delta ^ pred;
 	const T delta_mask[2] = { T(0), ~T(0) };
 	const T max_pos = mask<T>(bits) - pred;
 	// this is a corner case where the whole range is positive only
@@ -59,9 +61,9 @@ T decodeDelta(const T delta, const T pred, const int bits, std::false_type)
 template <class T>
 T decodeDelta(const T delta, const T pred, const int bits, std::true_type)
 {
-	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
-	transform::uint_t<sizeof(T)> deltaint = *((transform::uint_t<sizeof(T)>*)&delta);
-	transform::int_t<sizeof(T)> res = uint2int<T>(decodeDelta(deltaint, int2uint<T>(predint), bits, std::false_type()));
+	int_t<sizeof(T)> predint = transform::float2int(pred);
+	uint_t<sizeof(T)> deltaint = *((uint_t<sizeof(T)>*)&delta);
+	int_t<sizeof(T)> res = uint2int<T>(decodeDelta(deltaint, int2uint<T>(predint), bits, std::false_type()));
 	T res2 = transform::int2float(res);
 	return res2;
 }
@@ -76,6 +78,7 @@ T decodeDelta(const T delta, const T pred, const int q)
 template <class T>
 T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
 {
+// 	return raw ^ pred;
 	const T max_pos = mask<T>(bits) - pred;
 	// this is a corner case where the whole range is positive only
 	if (pred == T(0)) return raw;
@@ -96,9 +99,9 @@ T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
 template <class T>
 T encodeDelta(const T raw, const T pred, const int bits, std::true_type)
 {
-	transform::int_t<sizeof(T)> predint = transform::float2int(pred);
-	transform::int_t<sizeof(T)> rawint = transform::float2int(raw);
-	transform::uint_t<sizeof(T)> res = encodeDelta(int2uint<T>(rawint), int2uint<T>(predint), bits, std::false_type());
+	int_t<sizeof(T)> predint = transform::float2int(pred);
+	int_t<sizeof(T)> rawint = transform::float2int(raw);
+	uint_t<sizeof(T)> res = encodeDelta(int2uint<T>(rawint), int2uint<T>(predint), bits, std::false_type());
 	T r = *((T*)&res);
 
 	assert_eq(raw, decodeDelta(r, pred, bits));
@@ -156,4 +159,5 @@ T predict_face(const T v0, const int q)
 	return predict_face(v0, q, std::is_floating_point<T>());
 }
 
+}
 }

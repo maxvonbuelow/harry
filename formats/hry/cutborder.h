@@ -22,6 +22,7 @@
 
 #define DFS
 
+namespace hry {
 namespace cbm {
 
 template <typename T>
@@ -527,4 +528,5 @@ struct CutBorder : CutBorderBase {
 	}
 };
 
+}
 }

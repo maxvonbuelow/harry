@@ -29,6 +29,7 @@
 
 #include "attrcode.h"
 
+namespace hry {
 namespace cbm {
 
 template <typename R, typename P>
@@ -138,7 +139,6 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 			mesh::conn::fepair gateedge = data_gate->a;
 			mesh::conn::fepair gateedgeprev = elm_gate->prev->data.a;
 			mesh::conn::fepair gateedgenext = elm_gate->next->data.a;
-// 			mesh::faceidx_t gateface = /*gateedge.f()*/data_gate->f;
 
 			rd.order(order[v1.idx]);
 
@@ -215,11 +215,6 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 
 				++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
 
-// 				if (seq_first) {
-// 					ac.wedge(f, 0, v1.idx); ac.wedge(f, 1, v0.idx); ac.wedge(f, 2, v2.idx);
-// 				} else {
-// 					ac.wedge(f, curtri + 2, v2.idx);
-// 				}
 				if (op == CutBorderBase::ADDVTX) ac.vtx(f, curtri + 2);
 				if (seq_first) ac.face(f, 0);
 				++curtri;
@@ -271,4 +266,5 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 	return CBMStats{ cutBorder.max_parts, cutBorder.max_elements, nm };
 }
 
+}
 }

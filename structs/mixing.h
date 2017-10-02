@@ -57,12 +57,17 @@ public:
 		quants.push_back(q);
 		Type st = q == 0 ? t : quant_type(q);
 		stypes.push_back(st);
-		offsets.push_back(offsets.back() + SIZES[st]);
+		offsets.push_back(offsets.back() + SIZES[t]); // std::max(SIZES[t], SIZES[st]) == SIZES[t]
 	}
 
 	bool isquant(int i) const
 	{
 		return quants[i] != 0;
+	}
+	void setquant(int i, int q)
+	{
+		quants[i] = q;
+		stypes[i] = q == 0 ? types[i] : quant_type(q);
 	}
 	Type stype(int i) const
 	{
@@ -340,7 +345,7 @@ struct View {
 
 	void print(std::ostream &os, int i)
 	{
-		switch (fmt.type(i)) {
+		switch (fmt.stype(i)) {
 		case CHAR:
 		case SHORT:
 		case INT:

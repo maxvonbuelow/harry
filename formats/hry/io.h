@@ -13,6 +13,7 @@
 #include "models.h"
 #include "transform.h"
 
+namespace hry {
 namespace io {
 
 struct writer {
@@ -229,4 +230,5 @@ struct reader {
 	}
 };
 
+}
 }

@@ -11,6 +11,7 @@
 
 #include "../../structs/mixing.h"
 #include "../../structs/types.h"
+#include "../../structs/quant.h"
 #include "../../utils.h"
 #include "../../progress.h"
 
@@ -253,6 +254,8 @@ void read(std::istream &is, const std::string &dir, mesh::Mesh &mesh)
 
 	OBJReader reader(builder);
 	reader.read_obj(is, dir);
+
+	quant::set_bounds(mesh.attrs);
 
 	std::cout << "Used face regions: " << mesh.attrs.num_regs_face() << std::endl;
 	std::cout << "Used vertex regions: " << mesh.attrs.num_regs_vtx() << std::endl;

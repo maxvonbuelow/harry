@@ -30,8 +30,8 @@ struct HeaderReader {
 		if (faffafaf != htobe32(0xfaffafaf)) throw std::runtime_error("Invalid magic number");
 		uint8_t ver[2];
 		is.read((char*)ver, 2);
-		if (ver[0] != hry::VER_MAJ) throw std::runtime_error(std::string("File format version ") + std::to_string(ver[0]) + "." + std::to_string(ver[1]) + " incompatible to decoder format version " + std::to_string(hry::VER_MAJ) + "." + std::to_string(hry::VER_MIN));
-		if (ver[0] == 0 && ver[1] != hry::VER_MIN) throw std::runtime_error(std::string("File format version ") + std::to_string(ver[0]) + "." + std::to_string(ver[1]) + " incompatible to decoder format version " + std::to_string(hry::VER_MAJ) + "." + std::to_string(hry::VER_MIN) + " (All 0.x-versions are incompatible to each other)");
+		if (ver[0] != VER_MAJ) throw std::runtime_error(std::string("File format version ") + std::to_string(ver[0]) + "." + std::to_string(ver[1]) + " incompatible to decoder format version " + std::to_string(VER_MAJ) + "." + std::to_string(VER_MIN));
+		if (ver[0] == 0 && ver[1] != VER_MIN) throw std::runtime_error(std::string("File format version ") + std::to_string(ver[0]) + "." + std::to_string(ver[1]) + " incompatible to decoder format version " + std::to_string(VER_MAJ) + "." + std::to_string(VER_MIN) + " (All 0.x-versions are incompatible to each other)");
 	}
 
 	void read_syntax(mesh::Builder &builder)
@@ -150,8 +150,6 @@ void read(std::istream &is, mesh::Mesh &mesh)
 	cbm::decode(builder, rd, ac, prog);
 	progress::handle proga;
 	ac.decode(proga);
-
-	builder.finished_rev();
 }
 
 }

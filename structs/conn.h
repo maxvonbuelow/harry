@@ -161,7 +161,7 @@ struct Conn {
 	}
 	inline void swap(fepair a, fepair b)
 	{
-		fmerge(edges[edge(a)].twin, edges[edge(b)].twin);
+// 		fmerge(edges[edge(a)].twin, edges[edge(b)].twin);
 // 		fmerge(edges[edge(b)].twin, edges[edge(b)].twin);
 		fmerge(a, b);
 	}
