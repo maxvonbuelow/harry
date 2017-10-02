@@ -19,8 +19,7 @@
 
 struct Args {
 	struct Quant {
-		int l, a;
-		int bits;
+		int l, o, q;
 	};
 	std::string in, out;
 	unified::writer::FileType fmt;
@@ -55,6 +54,25 @@ struct Args {
 	}
 };
 
+void convert_quant(const mesh::attr::Attrs &attrs, const std::vector<Args::Quant> &src, std::vector<quant::Quant> &dst)
+{
+	for (int i = 0; i < src.size(); ++i) {
+		Args::Quant q = src[i];
+		if (q.q < 0) throw std::runtime_error("Invalid quantization bits");
+		if (q.l < 0 || q.l >= attrs.size()) throw std::runtime_error("Invalid list index");
+		if (q.o == -1) {
+			for (int o = 0; o < attrs[q.l].fmt().size(); ++o) {
+				if (q.q > attrs[q.l].fmt().bytes(o) * 8) throw std::runtime_error("Invalid quantization bits");
+				dst.push_back(quant::Quant(q.l, o, q.q));
+			}
+		} else {
+			if (q.o < 0 || q.o >= attrs[q.l].fmt().size()) throw std::runtime_error("Invalid attribute index");
+			if (q.q > attrs[q.l].fmt().bytes(q.o) * 8) throw std::runtime_error("Invalid quantization bits");
+			dst.push_back(quant::Quant(q.l, q.o, q.q));
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	AssertMngr::set([] { std::exit(EXIT_FAILURE); });
@@ -64,32 +82,12 @@ int main(int argc, char **argv)
 	mesh::Mesh mesh;
 	std::cout << "Reading input" << std::endl;
 	unified::reader::read(args.in, mesh);
-	std::cout << "Requantization" << std::endl;
-	for (mesh::listidx_t l = 0; l < mesh.attrs.size(); ++l) {
-		mesh.attrs[l].backup_fmt();
-	}
-	if (args.clearquant) {
-		for (mesh::listidx_t l = 0; l < mesh.attrs.size(); ++l) {
-			for (int i = 0; i < mesh.attrs[l].fmt().size(); ++i) {
-				mesh.attrs[l].tmp().setquant(i, 0);
-			}
-		}
-	}
-	for (int i = 0; i < args.quant.size(); ++i) {
-		Args::Quant q = args.quant[i];
-		if (q.a == -1) {
-			for (int a = 0; a < mesh.attrs[q.l].tmp().size(); ++a) {
-				std::cout << q.l << " " << a << " " << q.bits << std::endl;
-				mesh.attrs[q.l].tmp().setquant(a, q.bits);
-			}
-		} else {
-			std::cout << q.l << " " << q.a << " " << q.bits << std::endl;
-			mesh.attrs[q.l].tmp().setquant(q.a, q.bits);
-		}
-	}
-	for (mesh::listidx_t l = 0; l < mesh.attrs.size(); ++l) {
-		quant::requant(mesh.attrs[l], mesh.attrs[l].tmp());
-		mesh.attrs[l].restore_fmt();
+
+	if (!args.quant.empty() || args.clearquant) {
+		std::cout << "Quantization" << std::endl;
+		std::vector<quant::Quant> quant;
+		convert_quant(mesh.attrs, args.quant, quant);
+		quant::requant(mesh.attrs, quant, args.clearquant);
 	}
 
 	std::cout << "Writing output" << std::endl;

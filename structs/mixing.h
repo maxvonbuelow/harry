@@ -89,6 +89,10 @@ public:
 	{
 		return offsets.back();
 	}
+	int bytes(int i) const
+	{
+		return offsets[i + 1] - offsets[i];
+	}
 	int size() const
 	{
 		return types.size();
@@ -381,7 +385,7 @@ public:
 	Array(const Fmt &_fmt) : mfmt(_fmt), msize(0)
 	{}
 
-	const Fmt &fmt()
+	const Fmt &fmt() const
 	{
 		return mfmt;
 	}

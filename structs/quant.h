@@ -1,11 +1,22 @@
 #pragma once
 
 #include "../tplints.h"
+#include "mixing.h"
 
 #include <type_traits>
 #include <limits>
+#include <vector>
 
 namespace quant {
+
+struct Quant {
+	mesh::listidx_t l;
+	int o;
+	int q;
+
+	Quant(mesh::listidx_t _l, int _o, int _q) : l(_l), o(_o), q(_q)
+	{}
+};
 
 inline void set_bounds(mesh::attr::Attr &attr)
 {
@@ -69,10 +80,10 @@ inline void set_scale(mesh::attr::Attr &attr)
 		case mixing::CHAR:   s.at<int8_t>(j)   = s.get<int8_t>(k);   break;
 		}
 	}
-	std::cout << "Scale: "; spre.print(std::cout); std::cout << std::endl;
-	std::cout << "Min: "; min.print(std::cout); std::cout << std::endl;
-	std::cout << "Max: "; max.print(std::cout); std::cout << std::endl;
-	std::cout << "New scale: "; s.print(std::cout); std::cout << std::endl;
+// 	std::cout << "Scale: "; spre.print(std::cout); std::cout << std::endl;
+// 	std::cout << "Min: "; min.print(std::cout); std::cout << std::endl;
+// 	std::cout << "Max: "; max.print(std::cout); std::cout << std::endl;
+// 	std::cout << "New scale: "; s.print(std::cout); std::cout << std::endl;
 }
 
 template <typename T>
@@ -100,7 +111,6 @@ inline void requant(mixing::View src, mixing::View min, mixing::View scale, mixi
 			continue;
 		}
 
-		// TODO: allow srq && dstq
 		uint64_t q;
 		if (srcq) {
 			switch (src.fmt.stype(j)) {
@@ -143,6 +153,10 @@ inline void requant(mixing::View src, mixing::View min, mixing::View scale, mixi
 				q = rescale<int8_t>(src.at<int8_t>(j) - min.at<int8_t>(j), scale.at<int8_t>(j), (1 << (uint32_t)dst.fmt.quant(j)) - 1);
 				break;
 			}
+		}
+
+		if (srcq && dstq) {
+			q = rescale<uint64_t>(q, (1 << (uint32_t)src.fmt.quant(j)) - 1, (1 << (uint32_t)dst.fmt.quant(j)) - 1);
 		}
 
 		if (dstq) {
@@ -194,6 +208,27 @@ inline void requant(mesh::attr::Attr &attr, const mixing::Fmt &fmt)
 	set_scale(attr);
 	for (mesh::attridx_t j = 0; j < attr.size(); ++j) {
 		requant(attr[j], attr.min(), attr.scale(), attr.at(j, fmt));
+	}
+}
+inline void requant(mesh::attr::Attrs &attrs, const std::vector<Quant> &quant, bool clear)
+{
+	for (mesh::listidx_t l = 0; l < attrs.size(); ++l) {
+		attrs[l].backup_fmt();
+	}
+	if (clear) {
+		for (mesh::listidx_t l = 0; l < attrs.size(); ++l) {
+			for (int i = 0; i < attrs[l].fmt().size(); ++i) {
+				attrs[l].tmp().setquant(i, 0);
+			}
+		}
+	}
+	for (int i = 0; i < quant.size(); ++i) {
+		Quant q = quant[i];
+		attrs[q.l].tmp().setquant(q.o, q.q);
+	}
+	for (mesh::listidx_t l = 0; l < attrs.size(); ++l) {
+		requant(attrs[l], attrs[l].tmp());
+		attrs[l].restore_fmt();
 	}
 }
 
