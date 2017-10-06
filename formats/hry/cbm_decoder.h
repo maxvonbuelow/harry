@@ -50,7 +50,7 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 	prog.start(builder.num_vtx());
 
 	int curtri, ntri;
-	mesh::conn::fepair startedge, curedge, lastfaceedge;
+	mesh::conn::fepair startedge, curedge;
 	do {
 		Data v0, v1, v2;
 		INITOP initop = rd.iop();
@@ -129,13 +129,12 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 		if (curtri == ntri) ++f;
 
 		startedge = e0; curedge = e1;
-		lastfaceedge = e2;
 
 		while (!cutBorder.atEnd()) {
 			cutBorder.traverseStep(v0, v1);
-			mesh::conn::fepair gateedge = v0.a;
-			mesh::conn::fepair gateedgeprev = cutBorder.left().a;
-			mesh::conn::fepair gateedgenext = cutBorder.right().a;
+			mesh::conn::fepair gate = v0.a;
+			mesh::conn::fepair gateprev = cutBorder.left().a;
+			mesh::conn::fepair gatenext = cutBorder.right().a;
 
 			rd.order(order[v1.idx]);
 
@@ -171,7 +170,7 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 			case BORDER:
 				cutBorder.border();
 				v2 = Data(-1);
-				assert_eq(builder.mesh.conn.twin(gateedge), gateedge);
+				assert_eq(builder.mesh.conn.twin(gate), gate);
 				break;
 			}
 
@@ -191,7 +190,6 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 					e2 = builder.mesh.conn.enext(e1);
 				}
 				bool seq_last = curtri + 1 == ntri;
-				bool seq_mid = !seq_first && !seq_last;
 				assert_eq(builder.builder_conn.cur_f, f);
 
 				switch (realop) {
@@ -221,29 +219,29 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 				}
 
 				if (seq_first) {
-					assert_eq(builder.mesh.conn.twin(gateedge), gateedge);
+					assert_eq(builder.mesh.conn.twin(gate), gate);
 					assert_eq(builder.mesh.conn.twin(e0), e0);
-					builder.mesh.conn.fmerge(gateedge, e0);
+					builder.mesh.conn.fmerge(gate, e0);
 				}
 
 				switch (op) {
 				case CONNFWD:
 					if (seq_last && realop != BORDER) {
-						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
+						assert_eq(builder.mesh.conn.twin(gatenext), gatenext);
 						assert_eq(builder.mesh.conn.twin(e2), e2);
-						builder.mesh.conn.fmerge(gateedgenext, e2);
+						builder.mesh.conn.fmerge(gatenext, e2);
 					}
 
 					if (realop == CLOSE) {
-						assert_eq(builder.mesh.conn.twin(gateedgeprev), gateedgeprev);
+						assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
 						assert_eq(builder.mesh.conn.twin(e1), e1);
-						builder.mesh.conn.fmerge(gateedgeprev, e1);
+						builder.mesh.conn.fmerge(gateprev, e1);
 					}
 					break;
 				case CONNBWD:
-					assert_eq(builder.mesh.conn.twin(gateedgeprev), gateedgeprev);
+					assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
 					assert_eq(builder.mesh.conn.twin(e1), e1);
-					builder.mesh.conn.fmerge(gateedgeprev, e1);
+					builder.mesh.conn.fmerge(gateprev, e1);
 					break;
 				}
 			}

@@ -92,7 +92,6 @@ struct Triangulator {
 	}
 };
 
-
 template <typename H, typename T, typename W, typename P>
 void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 {
@@ -109,7 +108,7 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 	prog.start(mesh.num_vtx());
 	int nm = 0;
 	int curtri, ntri;
-	mesh::conn::fepair curedge, startedge, lastfaceedge;
+	mesh::conn::fepair curedge, startedge;
 	mesh::conn::fepair e0, e1, e2;
 	do {
 		Data v0, v1, v2, v2op;
@@ -193,19 +192,16 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 		cutBorder.initial(v0, v1, v2);
 
 		startedge = e0; curedge = e1;
-		lastfaceedge = e2;
 		++curtri;
 
 		while (!cutBorder.atEnd()) {
 			cutBorder.traverseStep(v0, v1);
 			Data data_gate = v0;
 			mesh::conn::fepair gate = v0.a;
-			mesh::conn::fepair gateedgeprev = cutBorder.left().a;
-			mesh::conn::fepair gateedgenext = cutBorder.right().a;
+			mesh::conn::fepair gateprev = cutBorder.left().a;
+			mesh::conn::fepair gatenext = cutBorder.right().a;
 			bool seq_first = curtri == ntri;
 			if (seq_first) {
-				lastfaceedge = gate;
-
 				assert_eq(v0.idx, mesh.conn.org(gate));
 				assert_eq(v1.idx, mesh.conn.dest(gate));
 
@@ -220,8 +216,8 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			wr.order(order[v1.idx]);
 
 			if (seq_first && e0 == INVALID_PAIR) {
-				handle(f, 0, ntri, v0.idx, v1.idx, mesh.conn.org(mesh.conn.enext(mesh.conn.enext(gate))), BORDER);
 				f = mesh.conn.face(gate);
+				handle(f, 0, ntri, v0.idx, v1.idx, mesh.conn.org(mesh.conn.enext(mesh.conn.enext(gate))), BORDER);
 				OP bop = cutBorder.border();
 
 				if (mesh.conn.twin(gate) != gate) mesh.conn.fmerge(gate, gate); // fix bad border
@@ -247,7 +243,6 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 					v2 = Data(mesh.conn.dest(curedge));
 				}
 				bool seq_last = curtri + 1 == ntri;
-				bool seq_mid = !seq_first && !seq_last;
 
 				if (!perm.isMapped(v2.idx)) {
 					handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, NEWVTX);
@@ -275,13 +270,13 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 						cutBorder.second->init(e2);
 					} else if (op == CONNFWD || op == CLOSE) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CONNFWD);
-						if (seq_last && mesh.conn.twin(gateedgenext) != e2) mesh.conn.fmerge(gateedgenext, e2);
-						if (op == CLOSE && mesh.conn.twin(gateedgeprev) != e1) mesh.conn.fmerge(gateedgeprev, e1);
+						if (seq_last && mesh.conn.twin(gatenext) != e2) mesh.conn.fmerge(gatenext, e2);
+						if (op == CLOSE && mesh.conn.twin(gateprev) != e1) mesh.conn.fmerge(gateprev, e1);
 						wr.connectforward(seq_first ? ntri : 0);
 						if (op == CONNFWD) cutBorder.first->init(e1);
 					} else if (op == CONNBWD) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CONNBWD);
-						if (mesh.conn.twin(gateedgeprev) != e1) mesh.conn.fmerge(gateedgeprev, e1);
+						if (mesh.conn.twin(gateprev) != e1) mesh.conn.fmerge(gateprev, e1);
 						wr.connectbackward(seq_first ? ntri : 0);
 						if (op == CONNBWD) cutBorder.first->init(e2);
 					} else {
@@ -290,11 +285,9 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 						cutBorder.first->init(e1);
 						cutBorder.second->init(e2);
 					}
-					assert_eq(curtri + 1 == ntri, seq_last); 
 				}
 
 				++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
-
 
 				if (seq_first) ac.face(f, e0.e());
 
