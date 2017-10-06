@@ -50,16 +50,6 @@ std::ostream &operator<<(std::ostream &os, const DataTpl<T> &d)
 }
 
 template <typename T>
-struct ElementTpl {
-	DataTpl<T> data;
-
-	ElementTpl()
-	{}
-	ElementTpl(const DataTpl<T> &d) : data(d)
-	{}
-};
-
-template <typename T>
 struct CutBorder {
 	typedef DataTpl<T> Data;
 	typedef std::list<Data> Elements;
@@ -100,11 +90,11 @@ struct CutBorder {
 		v1 = part.front();
 	}
 
-	const Data &left() // previous in traversal order
+	const Data &left() // previous on cut-border
 	{
 		return *(++cur_part().rbegin());
 	}
-	const Data &right() // next in traversal order
+	const Data &right() // next on cut-border
 	{
 		return cur_part().front();
 	}
@@ -120,7 +110,7 @@ struct CutBorder {
 	bool on_cut_border(int i)
 	{
 		assert_ge(vertices[i], 0);
-		return !!vertices[i];
+		return vertices[i] != 0;
 	}
 
 	typename Elements::iterator get_element(int i, int p = 0)
@@ -295,7 +285,6 @@ struct CutBorder {
 			it->swap(it[1]);
 			std::swap(it->isEdgeBegin, it[1].isEdgeBegin);
 		}
-		assert(cur_part().empty());
 		parts.pop_back();
 
 		return *it;

@@ -96,10 +96,8 @@ struct Triangulator {
 template <typename H, typename T, typename W, typename P>
 void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 {
-
-	typedef DataTpl<CoderData> Data;
-	typedef ElementTpl<CoderData> Element;
 	CutBorder<CoderData> cutBorder(mesh.num_vtx());
+	typedef CutBorder<CoderData>::Data Data;
 	Triangulator tri(mesh);
 
 	mesh::vtxidx_t vertexIdx = 0;
@@ -226,7 +224,7 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 				f = mesh.conn.face(gate);
 				OP bop = cutBorder.border();
 
-				if (mesh.conn.twin(gate) != gate) mesh.conn.swap(gate, gate); // fix bad border
+				if (mesh.conn.twin(gate) != gate) mesh.conn.fmerge(gate, gate); // fix bad border
 
 				wr.border(bop);
 			} else {
@@ -270,7 +268,6 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 						cutBorder.second->init(e2);
 						wr.nm(seq_first ? ntri : 0, perm.get(v2.idx));
 						++nm;
-// 						e0 = mesh::Mesh::INVALID_PAIR;
 					} else if (op == UNION) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, UNION);
 						wr.cutborderunion(seq_first ? ntri : 0, i, p);
@@ -278,14 +275,13 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 						cutBorder.second->init(e2);
 					} else if (op == CONNFWD || op == CLOSE) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CONNFWD);
-						if (seq_last && mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
-						if (op == CLOSE && mesh.conn.twin(gateedgeprev) != e1) mesh.conn.swap(gateedgeprev, e1);
+						if (seq_last && mesh.conn.twin(gateedgenext) != e2) mesh.conn.fmerge(gateedgenext, e2);
+						if (op == CLOSE && mesh.conn.twin(gateedgeprev) != e1) mesh.conn.fmerge(gateedgeprev, e1);
 						wr.connectforward(seq_first ? ntri : 0);
 						if (op == CONNFWD) cutBorder.first->init(e1);
-					} else if (op == CONNBWD/* || op == CLOSEBWD*/) {
+					} else if (op == CONNBWD) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CONNBWD);
-						if (mesh.conn.twin(gateedgeprev) != e1) mesh.conn.swap(gateedgeprev, e1);
-// 						if (seq_last && op == CLOSEBWD && mesh.conn.twin(gateedgenext) != e2) mesh.conn.swap(gateedgenext, e2);
+						if (mesh.conn.twin(gateedgeprev) != e1) mesh.conn.fmerge(gateedgeprev, e1);
 						wr.connectbackward(seq_first ? ntri : 0);
 						if (op == CONNBWD) cutBorder.first->init(e2);
 					} else {

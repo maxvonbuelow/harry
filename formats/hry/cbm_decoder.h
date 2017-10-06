@@ -37,12 +37,10 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 {
 	builder.noautomerge();
 
-	typedef DataTpl<CoderData> Data;
-	typedef ElementTpl<CoderData> Element;
-
 	int nm = 0;
 
 	CutBorder<CoderData> cutBorder(builder.num_vtx());
+	typedef CutBorder<CoderData>::Data Data;
 	std::vector<int> order(builder.num_vtx(), 0);
 
 	int vertexIdx = 0;
@@ -141,7 +139,7 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 
 			rd.order(order[v1.idx]);
 
-			OP op = rd.op(), realop;
+			OP op = rd.op(), realop = op;
 
 			bool seq_first = curtri == ntri;
 
@@ -196,9 +194,9 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 				bool seq_mid = !seq_first && !seq_last;
 				assert_eq(builder.builder_conn.cur_f, f);
 
-				switch (op) {
+				switch (realop) {
 				case CONNFWD:
-					if (realop != CLOSE) cutBorder.first->init(e1);
+					cutBorder.first->init(e1);
 					break;
 				case CONNBWD:
 					cutBorder.first->init(e2);
@@ -230,7 +228,7 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 
 				switch (op) {
 				case CONNFWD:
-					if (seq_last) {
+					if (seq_last && realop != BORDER) {
 						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
 						assert_eq(builder.mesh.conn.twin(e2), e2);
 						builder.mesh.conn.fmerge(gateedgenext, e2);
@@ -246,12 +244,6 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 					assert_eq(builder.mesh.conn.twin(gateedgeprev), gateedgeprev);
 					assert_eq(builder.mesh.conn.twin(e1), e1);
 					builder.mesh.conn.fmerge(gateedgeprev, e1);
-
-// 					if (seq_last && realop == CLOSEBWD) {
-// 						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
-// 						assert_eq(builder.mesh.conn.twin(e2), e2);
-// 						builder.mesh.conn.fmerge(gateedgenext, e2);
-// 					}
 					break;
 				}
 			}
