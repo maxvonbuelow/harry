@@ -17,10 +17,13 @@
 
 #pragma once
 
-#include <stack>
-#include "../../assert.h"
+#include <deque>
+#include <list>
+#include <vector>
 
-#define DFS
+#include "cbm_base.h"
+
+#include "../../assert.h"
 
 namespace hry {
 namespace cbm {
@@ -48,476 +51,272 @@ std::ostream &operator<<(std::ostream &os, const DataTpl<T> &d)
 
 template <typename T>
 struct ElementTpl {
-	ElementTpl<T> *prev, *next;
 	DataTpl<T> data;
 
-	bool isEdgeBegin;
-
-	ElementTpl() : isEdgeBegin(true)
+	ElementTpl()
 	{}
-	ElementTpl(const DataTpl<T> &d) : data(d), isEdgeBegin(true)
+	ElementTpl(const DataTpl<T> &d) : data(d)
 	{}
-
-	void set_prev(ElementTpl<T> *e)
-	{
-		prev = e;
-		e->next = this;
-	}
-	void set_next(ElementTpl<T> *e)
-	{
-		next = e;
-		e->prev = this;
-	}
 };
 
 template <typename T>
-struct PartTpl {
-	ElementTpl<T> *rootElement;
-	int nrVertices, nrEdges;
-
-	PartTpl() : nrVertices(0), nrEdges(0)
-	{}
-};
-
-struct CutBorderBase {
-	enum INITOP {
-		INIT,
-		TRI100, TRI010, TRI001,
-		TRI110, TRI101, TRI011,
-		TRI111,
-		EOM, IFIRST = INIT, ILAST = EOM
-	};
-	enum OP { BORDER, CONNBWD, SPLIT, UNION, NM, ADDVTX, CONNFWD, CLOSEBWD, CLOSEFWD, FIRST = BORDER, LAST = CONNFWD }; // close are meta operations; never transmitted
-	static const char* op2str(OP op)
-	{
-		//"\xE2\x96\xB3", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB3", 
-		static const char *lut[] = { "_", "<", "\xE2\x88\x9E", "\xE2\x88\xAA", "~", "*", ">", "?" };
-		return lut[op];
-	}
-	static const char* iop2str(INITOP iop)
-	{
-		//"\xE2\x96\xB3", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB3", 
-		static const char *lut[] = { "\xE2\x96\xB3", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB3", "/" };
-		return lut[iop];
-	}
-};
-
-template <typename T>
-struct CutBorder : CutBorderBase {
-	typedef ElementTpl<T> Element;
-	typedef PartTpl<T> Part;
+struct CutBorder {
 	typedef DataTpl<T> Data;
-	using CutBorderBase::INITOP;
-	using CutBorderBase::OP;
-	using CutBorderBase::op2str;
+	typedef std::list<Data> Elements;
+	struct Part : Elements {
+		bool isEdgeBegin;
+		Part() : isEdgeBegin(true)
+		{}
 
-	Part *parts, *part;
-	Element *elements, *element;
-	Element *emptyElements;
-	int max_elements, max_parts;
-
-	Data *last; // last added data
-
-// 	std::stack<int> swapped;
-	int swapped;
-	bool have_swap;
+		std::size_t num_edges()
+		{
+			return this->size() - (isEdgeBegin ? 0 : 1);
+		}
+	};
+	typedef std::deque<Part> Parts;
+	Parts parts;
+	Data *first, *second;
 
 	// acceleration structure for fast lookup if a vertex is currently on the cutboder
-	std::vector<int> vertices;
+	std::vector<unsigned char> vertices;
 
-	int _maxParts, _maxElems;
+	CutBorder(int num_vtx = 0) : vertices(num_vtx, 0)
+	{}
 
-	CutBorder(int maxParts, int maxElems, int vertcnthint = 0) : max_elements(0), max_parts(1), vertices(vertcnthint, 0), have_swap(false)
+	Part &cur_part()
 	{
-		_maxParts = maxParts; _maxElems = maxElems;
-
-		parts = new Part[maxParts]();
-		++maxElems;
-		elements = new Element[maxElems]();
-		element = elements;
-		emptyElements = elements;
-
-		// initialize links
-		for (int i = 0; i < maxElems; ++i) {
-			elements[i].next = i + 1 == maxElems ? NULL : elements + (i + 1);
-			elements[i].prev = i - 1 <  0        ? NULL : elements + (i - 1);
-		}
-	}
-
-	~CutBorder()
-	{
-		delete[] parts;
-		delete[] elements;
+		return parts.back();
 	}
 
 	bool atEnd()
 	{
-		return part == NULL && element == NULL;
+		return parts.empty();
 	}
 
-	Element *traverseStep(Data &v0, Data &v1)
+	void traverseStep(Data &v0, Data &v1)
 	{
-		v0 = element->data;
-		v1 = element->next->data;
-// 		return element->data;
-		return element;
+		Part &part = cur_part();
+		v0 = part.back();
+		v1 = part.front();
 	}
 
-	Element *traversalorder(Element *bfs, Element *dfs)
+	const Data &left() // previous in traversal order
 	{
-#ifdef DFS
-		return dfs;
-#else
-		return bfs;
-#endif
+		return *(++cur_part().rbegin());
 	}
-	void next(Element *bfs, Element *dfs)
+	const Data &right() // next in traversal order
 	{
-		Element *nxt = traversalorder(bfs, dfs);
-
-		// TODO: return on DFS
-		Element *beg = nxt;
-		while (!nxt->isEdgeBegin) {
-			nxt = nxt->next;
-			assert_ne(beg, nxt);
-		}
-		element = nxt;
+		return cur_part().front();
 	}
 
 	void activate_vertex(int i)
 	{
-		if (i >= vertices.size()) vertices.resize(i + 1, 0);
 		++vertices[i];
 	}
 	void deactivate_vertex(int i)
 	{
 		--vertices[i];
 	}
-
-	Element *new_element(Data v)
+	bool on_cut_border(int i)
 	{
-		activate_vertex(v.idx);
-		assert_lt(emptyElements, elements + _maxElems);
-		Element *e = new (emptyElements) Element(v);
-		assert_eq(e->isEdgeBegin, true);
-		emptyElements = emptyElements->next;
-		max_elements = std::max(max_elements, ++part->nrVertices);
-		return e;
+		assert_ge(vertices[i], 0);
+		return !!vertices[i];
 	}
 
-	void del_element(Element *e, int n = 1)
+	typename Elements::iterator get_element(int i, int p = 0)
 	{
-		if (n == 0) return;
-		deactivate_vertex(e->data.idx);
+		Part &part = parts[parts.size() - 1 - p];
 
-		Element *nxt = e->next;
-		emptyElements->set_prev(e);
-		emptyElements = e;
-		--part->nrVertices;
-		assert_ge(part->nrVertices, 0);
-
-		del_element(nxt, n - 1);
-	}
-
-	Element *get_element(int &edgecnt, int i, int p = 0)
-	{
-		edgecnt = 0;
-		Element *e1;
-		if (p != 0) e1 = (part - p)->rootElement;
-		else e1 = element;
-
-		if (i > 0) {
-// 			e1 = e1->next;
-			for (int j = 0; j < i; e1 = e1->next, ++j) {
-				edgecnt += j && e1->isEdgeBegin ? 1 : 0;
-			}
-		} else {
-			for (int j = 0; j < -i; e1 = e1->prev, ++j) {
-				edgecnt += e1->prev->isEdgeBegin ? 1 : 0;
-			}
-		}
-
-		return e1;
+		if (i > 0)
+			return std::next(part.begin(), i - 1);
+		else
+			return std::prev(part.end(), -i + 1);
 	}
 	void find_element(Data v, int &i, int &p)
 	{
-		// this fn walks into both directions on the cutborder
-		Element *l = element;
-		Element *r = element->next;
+		// search vertex in both directions
+		typename Parts::reverse_iterator part = parts.rbegin();
+		typename Elements::reverse_iterator l = part->rbegin();
+		typename Elements::iterator r = part->begin();
 
 		i = 0; p = 0;
 		while (1) {
-			if (r->data.idx == v.idx) {
+			if (r->idx == v.idx) {
 				++i;
 				return;
-			} else if (l->data.idx == v.idx) {
+			} else if (l->idx == v.idx) {
 				i = -i;
 				return;
 			}
 
-			if (l == r || l->prev == r) {
+			if (std::prev(l.base()) == r || l.base() == r) {
 				++p;
-				assert_ge(part - p, parts);
+				++part;
+				assert(part != parts.rend());
+				r = part->begin();
+				l = part->rbegin();
 				i = 0;
-				l = (part - p)->rootElement;
-				r = l->next;
 			} else {
-				l = l->prev;
-				r = r->next;
+				++r; ++l;
 				++i;
 			}
-		}
-	}
-
-	void new_part(Element *root)
-	{
-		++part;
-		assert_lt(part, parts + _maxParts);
-		part->rootElement = root;
-		max_parts = std::max(max_parts, (int)(part - parts) + 1);
-	}
-	void del_part()
-	{
-		assert_eq(part->nrVertices, 0);
-		if (part != parts) {
-			--part;
-			next(part->rootElement, part->rootElement);
-		} else {
-			part = NULL;
-			element = NULL;
 		}
 	}
 
 	void initial(Data v0, Data v1, Data v2)
 	{
-		part = parts;
-		Element *e0 = new_element(v0), *e1 = new_element(v1), *e2 = new_element(v2);
-		e0->set_next(e1); e1->set_next(e2); e2->set_next(e0);
-
-		part->nrEdges = 3;
-
-		next(e0, e2);
-
-		part->rootElement = element;
+		parts.emplace_back();
+		Part &part = cur_part();
+		part.push_back(v0); activate_vertex(v0.idx);
+		part.push_back(v1); activate_vertex(v1.idx);
+		part.push_back(v2); activate_vertex(v2.idx);
 	}
+
 	void newVertex(Data v)
 	{
-		Element *v0 = element;
-		Element *v1 = new_element(v);
-		last = &v1->data;
-		Element *v2 = element->next;
-
-		++part->nrEdges; // -1 + 2
-
-		v0->set_next(v1);
-		v2->set_prev(v1);
-
-		next(v2, v1);
+		Part &part = cur_part();
+		first = &part.back();
+		part.push_back(v); activate_vertex(v.idx);
+		second = &part.back();
 	}
-	Data connectForward(OP &op) // TODO: add border to realop
+	Data connectForward(OP &op)
 	{
-		Data d = !element->next->isEdgeBegin ? Data(-1) : element->next->next->data;
-		if (istri()) {
-			// destroy
-			del_element(element, 3);
-			part->nrEdges = 0;
+		Part &part = cur_part();
+		Data d = *(++part.begin());
+		if (!part.isEdgeBegin) {
+			op = border();
+			return Data(-1);
+		} else if (istri()) {
+			typename Elements::iterator it = part.begin();
+			deactivate_vertex((it++)->idx);
+			deactivate_vertex((it++)->idx);
+			deactivate_vertex((it++)->idx);
 
-			del_part();
-			op = CLOSEFWD;
+			parts.pop_back();
+			op = CLOSE;
 		} else {
-			element->isEdgeBegin = element->next->isEdgeBegin;
-			Element *e0 = element;
-			Element *e1 = element->next->next;
-			--part->nrEdges; // -2 + 1
-			del_element(element->next);
-			e0->set_next(e1);
+			deactivate_vertex(part.front().idx);
+			part.pop_front();
 
-			next(e1, e0);
 			op = CONNFWD;
+			first = &cur_part().back();
 		}
 		return d;
 	}
-	Data connectBackward(OP &op) // TODO: add border to realop
+	Data connectBackward(OP &op)
 	{
-		Data d = !element->prev->isEdgeBegin ? Data(-1) : element->prev->data;
-		if (istri()) {
-			// destroy
-			del_element(element, 3);
-			part->nrEdges = 0;
+		Part &part = cur_part();
 
-			del_part();
-			op = CLOSEBWD;
-		} else {
-			std::swap(element->data, element->prev->data);
-			element->isEdgeBegin = element->prev->isEdgeBegin;
-			Element *e0 = element->prev->prev;
-			Element *e1 = element;
-			--part->nrEdges; // -2 + 1
-			del_element(element->prev);
-			e0->set_next(e1);
+		// NOTE: border and close operations are always renamed to connect forward
+		deactivate_vertex(part.back().idx);
+		part.pop_back();
 
-			next(e1->next, e1);
-			op = CONNBWD;
-		}
-		return d;
+		op = CONNBWD;
+		first = &part.back();
+
+		return part.back();
 	}
 
 	bool istri()
 	{
-		return part->nrEdges == 3 && part->nrVertices == 3;
+		Part &part = cur_part();
+		return part.num_edges() == 3 && part.size() == 3;
 	}
 
 	OP border()
 	{
-		--part->nrEdges;
-		if (part->nrEdges == 0) {
-			element->isEdgeBegin = false;
-			del_element(element, part->nrVertices);
-			del_part();
+		Part &part = cur_part();
+		if (part.num_edges() == 1) {
+			assert_eq(part.size(), 2);
+			typename Elements::iterator it = part.begin();
+			deactivate_vertex((it++)->idx);
+			deactivate_vertex((it++)->idx);
+			parts.pop_back();
 		} else {
-			if (part->nrVertices >= 1 && (part->nrVertices < 2 || element->prev->isEdgeBegin != element->next->isEdgeBegin)) {
-				++part->nrEdges;
-				OP dummy;
-				if (!element->prev->isEdgeBegin) {
-					connectBackward(dummy);
-					return CONNBWD;
-				} else if (!element->next->isEdgeBegin) {
-					connectForward(dummy);
-					return CONNFWD;
-				}
-			} else if (part->nrVertices >= 2 && !element->prev->isEdgeBegin && !element->next->isEdgeBegin) {
-				element->isEdgeBegin = false;
-				Element *n = element->next->next;
-				element->prev->set_next(n);
-				del_element(element, 2);
-				element = n;
-			} else
-				element->isEdgeBegin = false;
+			Data endvtx = part.back();
 
-			next(element->next, element->next);
+			bool rename = !part.isEdgeBegin;
+
+			deactivate_vertex(part.back().idx);
+			part.pop_back();
+
+			if (!part.isEdgeBegin) {
+				deactivate_vertex(part.front().idx);
+				part.pop_front();
+			}
+
+			part.push_front(endvtx); activate_vertex(endvtx.idx);
+			part.isEdgeBegin = false;
+
+			if (rename) return CONNFWD;
 		}
 
 		return BORDER;
 	}
-	void preserveOrder()
-	{
-		return; // TODO
-// 		if (!swapped.empty()) {
-		if (have_swap) {
-			Part *swapwith;
-// 			do {
-				swapwith = parts + swapped/*.top()*/;
-				if (swapwith < part) {
-// 					std::cout << "SWAP: " << (part - parts) << " " << swapped << std::endl;
-					part->rootElement = element;
-					std::swap(*part, *swapwith);
-// 				swapped.pop();
-					next(part->rootElement, part->rootElement);
-				}
-				have_swap = false;
-// 			} while (swapwith >= part && !swapped.empty());
-		}
-	}
 
 	Data splitCutBorder(int i)
 	{
-		int edgecnt;
-		Element *e0 = element, *e1 = get_element(edgecnt, i);
-		Element *newroot, *newtail;
+		Part &part = cur_part();
+		typename Elements::iterator it = get_element(i);
+		Data gate = part.back();
+		deactivate_vertex(gate.idx);
+		part.pop_back();
 
-		// setup connections
-		newroot = e0->next;
-		newtail = e1->prev;
-		e0->set_next(e1);
+		parts.emplace_back();
+		Part &newpart = cur_part();
+		newpart.splice(newpart.begin(), part, part.begin(), it);
+		part.push_back(gate); activate_vertex(gate.idx);
+		newpart.push_back(*it); activate_vertex(it->idx);
+		std::swap(part.isEdgeBegin, newpart.isEdgeBegin);
 
-		Element *split = new_element(e1->data);
-		last = &split->data;
-		newtail->set_next(split);
-		split->set_next(newroot);
+		second = &newpart.back();
+		first = &part.back();
 
-		// add part
-		if (i > 0) {
-			--i;
-			part->rootElement = traversalorder(e1, e0);
-			part->nrVertices -= i + 1;
-			part->nrEdges -= edgecnt;
-			new_part(newroot); // root unimportant -> will be overwritten; TODO: remove
-			part->nrVertices += i + 1;
-			part->nrEdges += edgecnt + 1;
-
-			next(newroot, split);
-		} else {
-			i = -i;
-
-			part->rootElement = traversalorder(newroot, split);
-			part->nrVertices -= i + 1;
-			part->nrEdges -= edgecnt;
-			new_part(traversalorder(e1, e0)); // root unimportant -> will be overwritten; TODO: remove
-			part->nrVertices += i + 1;
-			part->nrEdges += edgecnt + 1;
-
-			std::swap(*part, *(part - 1));
-			swapped = (part - 1) - parts;
-			have_swap = true;
-
-// 			next(e1, e0);
-			next(newroot, split);
-		}
-
-		return e1->data;
+		return *it;
 	}
 	Data cutBorderUnion(int i, int p)
 	{
-		int edgecnt;
-		Element *e0 = element, *e1 = get_element(edgecnt, i, p);
+		Part &part = cur_part();
+		typename Elements::iterator it = get_element(i, p);
+		Data gate = part.back();
+		deactivate_vertex(gate.idx);
+		part.pop_back();
 
-		Element *newroot = element->next;
-		Element *newtail = e1->prev;
+		Part &otherpart = parts[parts.size() - 1 - p];
+		part.push_back(gate); activate_vertex(gate.idx);
+		first = &part.back();
+		part.splice(part.end(), otherpart, it, otherpart.end());
+		part.splice(part.end(), otherpart, otherpart.begin(), otherpart.end()); // it is now end
+		part.push_back(*it); activate_vertex(it->idx);
+		second = &part.back();
 
-		e0->set_next(e1);
+		// move part to front
+		for (typename Parts::iterator it = parts.begin() + (parts.size() - 1 - p); it < parts.end() - 1; ++it) {
+			it->swap(it[1]);
+			std::swap(it->isEdgeBegin, it[1].isEdgeBegin);
+		}
+		assert(cur_part().empty());
+		parts.pop_back();
 
-		Element *un = new_element(e1->data);
-		last = &un->data;
-		newtail->set_next(un);
-		un->set_next(newroot);
-
-		(part - p)->nrVertices += part->nrVertices; part->nrVertices = 0;
-		(part - p)->nrEdges += part->nrEdges + 1; part->nrEdges = 0;
-		(part - p)->rootElement = traversalorder(newroot, un); // sometimes it's more efficient to remove this line
-		std::swap(*(part - p), *(part - 1)); // process the parts in correct traversal order
-		del_part();
-
-// 		next(newroot, newtail);
-
-		return e1->data;
-	}
-
-	bool on_cut_border(int i)
-	{
-		return !!vertices[i];
+		return *it;
 	}
 
 	bool findAndUpdate(Data v, int &i, int &p, OP &op)
 	{
 		if (!on_cut_border(v.idx)) return false;
 		find_element(v, i, p);
-		bigassert(int tr; assert_eq(get_element(tr, i, p)->data.idx, v.idx);)
+		assert_eq(get_element(i, p)->idx, v.idx);
 
 		if (p > 0) {
 			op = UNION;
 			Data res = cutBorderUnion(i, p);
 			assert_eq(res.idx, v.idx);
 		} else {
-			if (element->next->isEdgeBegin && element->next->next->data.idx == v.idx) {
-// 				op = CONNFWD;
+			Part &part = cur_part();
+			if (part.isEdgeBegin && (++part.begin())->idx == v.idx) {
 				connectForward(op);
-			} else if (element->prev->isEdgeBegin && element->prev->data.idx == v.idx) {
-// 				op = CONNBWD;
+			} else if ((++part.rbegin())->idx == v.idx) {
 				connectBackward(op);
-			} else if (i == 0) {
-				// this can not happen
-				assert_fail;
-				return false;
 			} else {
 				op = SPLIT;
 				Data res = splitCutBorder(i);

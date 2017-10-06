@@ -17,6 +17,26 @@
 namespace hry {
 namespace cbm {
 
+enum INITOP {
+	INIT,
+	TRI100, TRI010, TRI001,
+	TRI110, TRI101, TRI011,
+	TRI111,
+	EOM, IFIRST = INIT, ILAST = EOM
+};
+enum OP { BORDER, CONNBWD, SPLIT, UNION, NM, NEWVTX, CONNFWD, CLOSE, FIRST = BORDER, LAST = CONNFWD }; // close is meta operation; never transmitted
+
+static const char* op2str(OP op)
+{
+	static const char *lut[] = { "_", "<", "\xE2\x88\x9E", "\xE2\x88\xAA", "~", "*", ">", "?" };
+	return lut[op];
+}
+static const char* iop2str(INITOP iop)
+{
+	static const char *lut[] = { "\xE2\x96\xB3", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB9", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB2", "\xE2\x96\xB3\xC2\xB3", "/" };
+	return lut[iop];
+}
+
 struct CoderData {
 	mesh::conn::fepair a;
 
@@ -41,11 +61,6 @@ e0     |  YES  |       |
 e1     |  YES  |  YES  |  YES
 e2     |       |       |  YES
 */
-
-struct CBMStats {
-	int used_parts, used_elements;
-	int nm;
-};
 
 }
 }

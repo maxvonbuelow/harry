@@ -36,4 +36,3 @@ ENDFOREACH(f)
 add_executable(${EXE_NAME} main.cc assert.cc ${FMTSRC})
 
 include_directories("${CMAKE_SOURCE_DIR}/")
-

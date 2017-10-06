@@ -33,7 +33,7 @@ namespace hry {
 namespace cbm {
 
 template <typename R, typename P>
-CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
+void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 {
 	builder.noautomerge();
 
@@ -42,7 +42,7 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 
 	int nm = 0;
 
-	CutBorder<CoderData> cutBorder(100 + 20000, 10 * sqrt(builder.num_vtx()) + 10000000); // TODO: Use stack
+	CutBorder<CoderData> cutBorder(builder.num_vtx());
 	std::vector<int> order(builder.num_vtx(), 0);
 
 	int vertexIdx = 0;
@@ -55,32 +55,32 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 	mesh::conn::fepair startedge, curedge, lastfaceedge;
 	do {
 		Data v0, v1, v2;
-		CutBorderBase::INITOP initop = rd.iop();
-		if (initop == CutBorderBase::EOM) break;
+		INITOP initop = rd.iop();
+		if (initop == EOM) break;
 		curtri = 0;
 		switch (initop) {
-		case CutBorderBase::INIT:
+		case INIT:
 			v0.idx = vertexIdx++; v1.idx = vertexIdx++; v2.idx = vertexIdx++;
 			break;
-		case CutBorderBase::TRI100:
+		case TRI100:
 			v0.idx = rd.vertid(); v1.idx = vertexIdx++; v2.idx = vertexIdx++;
 			break;
-		case CutBorderBase::TRI010:
+		case TRI010:
 			v2.idx = vertexIdx++; v1.idx = rd.vertid(); v0.idx = vertexIdx++;
 			break;
-		case CutBorderBase::TRI001:
+		case TRI001:
 			v0.idx = vertexIdx++; v1.idx = vertexIdx++; v2.idx = rd.vertid();
 			break;
-		case CutBorderBase::TRI110:
+		case TRI110:
 			v0.idx = rd.vertid(); v1.idx = rd.vertid(); v2.idx = vertexIdx++;
 			break;
-		case CutBorderBase::TRI101:
+		case TRI101:
 			v2.idx = rd.vertid(); v1.idx = vertexIdx++; v0.idx = rd.vertid();
 			break;
-		case CutBorderBase::TRI011:
+		case TRI011:
 			v0.idx = vertexIdx++; v1.idx = rd.vertid(); v2.idx = rd.vertid();
 			break;
-		case CutBorderBase::TRI111:
+		case TRI111:
 			v0.idx = rd.vertid(); v1.idx = rd.vertid(); v2.idx = rd.vertid();
 			break;
 		}
@@ -93,28 +93,28 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 		if (curtri == ntri) builder.face_end();
 
 		switch (initop) {
-		case CutBorderBase::INIT:
+		case INIT:
 			ac.vtx(f, 0); ac.vtx(f, 1); ac.vtx(f, 2);
 			break;
-		case CutBorderBase::TRI100:
+		case TRI100:
 			ac.vtx(f, 1); ac.vtx(f, 2);
 			break;
-		case CutBorderBase::TRI010:
+		case TRI010:
 			ac.vtx(f, 2); ac.vtx(f, 0);
 			break;
-		case CutBorderBase::TRI001:
+		case TRI001:
 			ac.vtx(f, 0); ac.vtx(f, 1);
 			break;
-		case CutBorderBase::TRI110:
+		case TRI110:
 			ac.vtx(f, 2);
 			break;
-		case CutBorderBase::TRI101:
+		case TRI101:
 			ac.vtx(f, 1);
 			break;
-		case CutBorderBase::TRI011:
+		case TRI011:
 			ac.vtx(f, 0);
 			break;
-		case CutBorderBase::TRI111:
+		case TRI111:
 			break;
 		}
 
@@ -134,44 +134,43 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 		lastfaceedge = e2;
 
 		while (!cutBorder.atEnd()) {
-			Element *elm_gate = cutBorder.traverseStep(v0, v1);
-			Data *data_gate = &elm_gate->data;
-			mesh::conn::fepair gateedge = data_gate->a;
-			mesh::conn::fepair gateedgeprev = elm_gate->prev->data.a;
-			mesh::conn::fepair gateedgenext = elm_gate->next->data.a;
+			cutBorder.traverseStep(v0, v1);
+			mesh::conn::fepair gateedge = v0.a;
+			mesh::conn::fepair gateedgeprev = cutBorder.left().a;
+			mesh::conn::fepair gateedgenext = cutBorder.right().a;
 
 			rd.order(order[v1.idx]);
 
-			CutBorderBase::OP op = rd.op(), realop;
+			OP op = rd.op(), realop;
 
 			bool seq_first = curtri == ntri;
 
 			switch (op) {
-			case CutBorderBase::CONNFWD:
-				v2 = cutBorder.connectForward(realop); // TODO: add border to realop
+			case CONNFWD:
+				v2 = cutBorder.connectForward(realop);
 				break;
-			case CutBorderBase::CONNBWD:
-				v2 = cutBorder.connectBackward(realop); // TODO: add border to realop
+			case CONNBWD:
+				v2 = cutBorder.connectBackward(realop);
 				break;
-			case CutBorderBase::SPLIT:
+			case SPLIT:
 				i = rd.elem();
 				v2 = cutBorder.splitCutBorder(i);
 				break;
-			case CutBorderBase::UNION:
+			case UNION:
 				i = rd.elem();
 				p = rd.part();
 				v2 = cutBorder.cutBorderUnion(i, p);
 				break;
-			case CutBorderBase::ADDVTX:
+			case NEWVTX:
 				v2 = Data(vertexIdx++);
 				cutBorder.newVertex(v2);
 				break;
-			case CutBorderBase::NM:
+			case NM:
 				v2.idx = rd.vertid();
 				cutBorder.newVertex(v2);
 				++nm;
 				break;
-			case CutBorderBase::BORDER:
+			case BORDER:
 				cutBorder.border();
 				v2 = Data(-1);
 				assert_eq(builder.mesh.conn.twin(gateedge), gateedge);
@@ -198,29 +197,28 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 				assert_eq(builder.builder_conn.cur_f, f);
 
 				switch (op) {
-				case CutBorderBase::CONNFWD:
-					data_gate->init(e1);
+				case CONNFWD:
+					if (realop != CLOSE) cutBorder.first->init(e1);
 					break;
-				case CutBorderBase::CONNBWD:
-					data_gate->init(e2);
+				case CONNBWD:
+					cutBorder.first->init(e2);
 					break;
-				case CutBorderBase::SPLIT:
-				case CutBorderBase::UNION:
-				case CutBorderBase::ADDVTX:
-				case CutBorderBase::NM:
-					cutBorder.last->init(e2);
-					data_gate->init(e1);
+				case SPLIT:
+				case UNION:
+				case NEWVTX:
+				case NM:
+					cutBorder.first->init(e1);
+					cutBorder.second->init(e2);
 					break;
 				}
 
 				++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
 
-				if (op == CutBorderBase::ADDVTX) ac.vtx(f, curtri + 2);
+				if (op == NEWVTX) ac.vtx(f, curtri + 2);
 				if (seq_first) ac.face(f, 0);
 				++curtri;
 				if (seq_last) {
 					builder.face_end();
-					cutBorder.preserveOrder();
 					++f;
 				}
 
@@ -231,29 +229,29 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 				}
 
 				switch (op) {
-				case CutBorderBase::CONNFWD:
+				case CONNFWD:
 					if (seq_last) {
 						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
 						assert_eq(builder.mesh.conn.twin(e2), e2);
 						builder.mesh.conn.fmerge(gateedgenext, e2);
 					}
 
-					if (realop == CutBorderBase::CLOSEFWD) {
+					if (realop == CLOSE) {
 						assert_eq(builder.mesh.conn.twin(gateedgeprev), gateedgeprev);
 						assert_eq(builder.mesh.conn.twin(e1), e1);
 						builder.mesh.conn.fmerge(gateedgeprev, e1);
 					}
 					break;
-				case CutBorderBase::CONNBWD:
+				case CONNBWD:
 					assert_eq(builder.mesh.conn.twin(gateedgeprev), gateedgeprev);
 					assert_eq(builder.mesh.conn.twin(e1), e1);
 					builder.mesh.conn.fmerge(gateedgeprev, e1);
 
-					if (seq_last && realop == CutBorderBase::CLOSEBWD) {
-						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
-						assert_eq(builder.mesh.conn.twin(e2), e2);
-						builder.mesh.conn.fmerge(gateedgenext, e2);
-					}
+// 					if (seq_last && realop == CLOSEBWD) {
+// 						assert_eq(builder.mesh.conn.twin(gateedgenext), gateedgenext);
+// 						assert_eq(builder.mesh.conn.twin(e2), e2);
+// 						builder.mesh.conn.fmerge(gateedgenext, e2);
+// 					}
 					break;
 				}
 			}
@@ -262,8 +260,6 @@ CBMStats decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &
 		}
 	} while (1);
 	prog.end();
-
-	return CBMStats{ cutBorder.max_parts, cutBorder.max_elements, nm };
 }
 
 }

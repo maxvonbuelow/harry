@@ -12,7 +12,7 @@
 #include <chrono>
 #include <thread>
 
-#define DBG
+// #define DBG
 
 #ifdef DBG
 #define assert(C) do { if (!(C)) { std::cerr << "Assertion \"" << #C << "\" failed on line " << __LINE__ << " " << __FILE__ << std::endl; AssertMngr::err(); } } while(0)

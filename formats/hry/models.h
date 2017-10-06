@@ -23,9 +23,9 @@ template <typename TF = uint64_t>
 struct CBMInitModel : arith::Model<TF> {
 	arith::AdaptiveStatisticsModule<> stat;
 
-	CBMInitModel() : stat(cbm::CutBorderBase::ILAST + 1)
+	CBMInitModel() : stat(cbm::ILAST + 1)
 	{
-		for (int i = cbm::CutBorderBase::IFIRST; i <= cbm::CutBorderBase::ILAST; ++i) {
+		for (int i = cbm::IFIRST; i <= cbm::ILAST; ++i) {
 			stat.init(i);
 		}
 	}
@@ -33,14 +33,14 @@ struct CBMInitModel : arith::Model<TF> {
 	void enc(arith::Encoder<TF> &coder, const unsigned char *s, int n)
 	{
 		// TODO correct cast for s
-		const cbm::CutBorderBase::INITOP *sc = (const cbm::CutBorderBase::INITOP*)s;
+		const cbm::INITOP *sc = (const cbm::INITOP*)s;
 		coder(this->stat, *sc);
 		this->stat.inc(*sc);
 	}
 	void dec(arith::Decoder<TF> &coder, unsigned char *s, int n)
 	{
-		cbm::CutBorderBase::INITOP *sc = (cbm::CutBorderBase::INITOP*)s;
-		*sc = (cbm::CutBorderBase::INITOP)coder(this->stat);
+		cbm::INITOP *sc = (cbm::INITOP*)s;
+		*sc = (cbm::INITOP)coder(this->stat);
 		this->stat.inc(*sc);
 	}
 };
@@ -49,18 +49,18 @@ template <int MAXORDER, typename TF = uint64_t>
 struct CBMModel : arith::Model<TF> {
 	arith::AdaptiveStatisticsModule<> stat;
 	TF c;
-	TF c_addvtx_i[MAXORDER], c_connfwd_i[MAXORDER];
+	TF c_newvtx_i[MAXORDER], c_connfwd_i[MAXORDER];
 	int o;
 
-	CBMModel() : stat(cbm::CutBorderBase::LAST + 1)
+	CBMModel() : stat(cbm::LAST + 1)
 	{
-		for (int i = cbm::CutBorderBase::FIRST; i <= cbm::CutBorderBase::LAST; ++i) {
+		for (int i = cbm::FIRST; i <= cbm::LAST; ++i) {
 			stat.init(i);
 		}
 
 		c = 2;
 		for (int i = 0; i < MAXORDER; ++i) {
-			c_addvtx_i[i] = 1;
+			c_newvtx_i[i] = 1;
 			c_connfwd_i[i] = 1;
 		}
 	}
@@ -72,7 +72,7 @@ struct CBMModel : arith::Model<TF> {
 
 	void enc(arith::Encoder<TF> &coder, const unsigned char *s, int n)
 	{
-		const cbm::CutBorderBase::OP *sc = (const cbm::CutBorderBase::OP*)s;
+		const cbm::OP *sc = (const cbm::OP*)s;
 		this->set_orderfreqs();
 		coder(this->stat, *sc);
 		this->inc(*sc);
@@ -80,9 +80,9 @@ struct CBMModel : arith::Model<TF> {
 
 	void dec(arith::Decoder<TF> &coder, unsigned char *s, int n)
 	{
-		cbm::CutBorderBase::OP *sc = (cbm::CutBorderBase::OP*)s;
+		cbm::OP *sc = (cbm::OP*)s;
 		this->set_orderfreqs();
-		*sc = (cbm::CutBorderBase::OP)coder(this->stat);
+		*sc = (cbm::OP)coder(this->stat);
 		this->inc(*sc);
 	}
 
@@ -90,11 +90,11 @@ private:
 	void set_orderfreqs()
 	{
 		int i = order2idx(o);
-		TF addvtx_scaled = c_addvtx_i[i] * c / (c_addvtx_i[i] + c_connfwd_i[i]);
-		TF connfwd_scaled = c - addvtx_scaled;
+		TF newvtx_scaled = c_newvtx_i[i] * c / (c_newvtx_i[i] + c_connfwd_i[i]);
+		TF connfwd_scaled = c - newvtx_scaled;
 
-		stat.set(cbm::CutBorderBase::ADDVTX, addvtx_scaled);
-		stat.set(cbm::CutBorderBase::CONNFWD, connfwd_scaled);
+		stat.set(cbm::NEWVTX, newvtx_scaled);
+		stat.set(cbm::CONNFWD, connfwd_scaled);
 	}
 
 	int order2idx(int o) const
@@ -106,10 +106,10 @@ private:
 	void inc(arith::AdaptiveStatisticsModule<>::SymType s)
 	{
 		int i = order2idx(o);
-		if (s == cbm::CutBorderBase::ADDVTX) {
+		if (s == cbm::NEWVTX) {
 			++c;
-			++c_addvtx_i[i];
-		} else if (s == cbm::CutBorderBase::CONNFWD) {
+			++c_newvtx_i[i];
+		} else if (s == cbm::CONNFWD) {
 			++c;
 			++c_connfwd_i[i];
 		} else {

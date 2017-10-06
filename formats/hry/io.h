@@ -31,57 +31,57 @@ struct writer {
 	// Connectivity
 	void initial(int ntri)
 	{
-		iop(cbm::CutBorderBase::INIT);
+		iop(cbm::INIT);
 		numtri(ntri);
 	}
-	void tri100(int ntri, mesh::vtxidx_t v0) { tri1(ntri, v0, cbm::CutBorderBase::TRI100); }
-	void tri010(int ntri, mesh::vtxidx_t v0) { tri1(ntri, v0, cbm::CutBorderBase::TRI010); }
-	void tri001(int ntri, mesh::vtxidx_t v0) { tri1(ntri, v0, cbm::CutBorderBase::TRI001); }
+	void tri100(int ntri, mesh::vtxidx_t v0) { tri1(ntri, v0, cbm::TRI100); }
+	void tri010(int ntri, mesh::vtxidx_t v0) { tri1(ntri, v0, cbm::TRI010); }
+	void tri001(int ntri, mesh::vtxidx_t v0) { tri1(ntri, v0, cbm::TRI001); }
 
-	void tri110(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1) { tri2(ntri, v0, v1, cbm::CutBorderBase::TRI110); }
-	void tri101(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1) { tri2(ntri, v0, v1, cbm::CutBorderBase::TRI101); }
-	void tri011(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1) { tri2(ntri, v0, v1, cbm::CutBorderBase::TRI011); }
+	void tri110(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1) { tri2(ntri, v0, v1, cbm::TRI110); }
+	void tri101(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1) { tri2(ntri, v0, v1, cbm::TRI101); }
+	void tri011(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1) { tri2(ntri, v0, v1, cbm::TRI011); }
 
-	void tri111(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1, mesh::vtxidx_t v2) { tri3(ntri, v0, v1, v2, cbm::CutBorderBase::TRI111); }
+	void tri111(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1, mesh::vtxidx_t v2) { tri3(ntri, v0, v1, v2, cbm::TRI111); }
 
 	void end()
 	{
-		iop(cbm::CutBorderBase::EOM);
+		iop(cbm::EOM);
 	}
-	void border(cbm::CutBorderBase::OP bop = cbm::CutBorderBase::BORDER)
+	void border(cbm::OP bop = cbm::BORDER)
 	{
 		op(bop);
 	}
 	void newvertex(int ntri)
 	{
-		op(cbm::CutBorderBase::ADDVTX);
+		op(cbm::NEWVTX);
 		numtri(ntri);
 	}
 	void connectforward(int ntri)
 	{
-		op(cbm::CutBorderBase::CONNFWD);
+		op(cbm::CONNFWD);
 		numtri(ntri);
 	}
 	void connectbackward(int ntri)
 	{
-		op(cbm::CutBorderBase::CONNBWD);
+		op(cbm::CONNBWD);
 		numtri(ntri);
 	}
 	void splitcutborder(int ntri, int i)
 	{
-		op(cbm::CutBorderBase::SPLIT);
+		op(cbm::SPLIT);
 		elem(i);
 		numtri(ntri);
 	}
 	void cutborderunion(int ntri, int i, int p)
 	{
-		op(cbm::CutBorderBase::UNION);
+		op(cbm::UNION);
 		elem(i); part(p);
 		numtri(ntri);
 	}
 	void nm(int ntri, mesh::vtxidx_t idx)
 	{
-		op(cbm::CutBorderBase::NM);
+		op(cbm::NM);
 		vertid(idx);
 		numtri(ntri);
 	}
@@ -116,20 +116,20 @@ struct writer {
 	}
 
 private:
-	void tri1(int ntri, mesh::vtxidx_t v0, cbm::CutBorderBase::INITOP op)
+	void tri1(int ntri, mesh::vtxidx_t v0, cbm::INITOP op)
 	{
 		iop(op);
 		vertid(v0);
 		numtri(ntri);
 	}
-	void tri2(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1, cbm::CutBorderBase::INITOP op)
+	void tri2(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1, cbm::INITOP op)
 	{
 		iop(op);
 		vertid(v0);
 		vertid(v1);
 		numtri(ntri);
 	}
-	void tri3(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1, mesh::vtxidx_t v2, cbm::CutBorderBase::INITOP op)
+	void tri3(int ntri, mesh::vtxidx_t v0, mesh::vtxidx_t v1, mesh::vtxidx_t v2, cbm::INITOP op)
 	{
 		iop(op);
 		vertid(v0);
@@ -138,11 +138,11 @@ private:
 		numtri(ntri);
 	}
 
-	void iop(cbm::CutBorderBase::INITOP op)
+	void iop(cbm::INITOP op)
 	{
 		models.conn_iop.encode(coder, op);
 	}
-	void op(cbm::CutBorderBase::OP op)
+	void op(cbm::OP op)
 	{
 		models.conn_op.encode(coder, op);
 	}
@@ -178,13 +178,13 @@ struct reader {
 	}
 
 	// Connectivity
-	cbm::CutBorderBase::INITOP iop()
+	cbm::INITOP iop()
 	{
-		return models.conn_iop.template decode<cbm::CutBorderBase::INITOP>(coder);
+		return models.conn_iop.template decode<cbm::INITOP>(coder);
 	}
-	cbm::CutBorderBase::OP op()
+	cbm::OP op()
 	{
-		return models.conn_op.template decode<cbm::CutBorderBase::OP>(coder);
+		return models.conn_op.template decode<cbm::OP>(coder);
 	}
 	uint32_t elem()
 	{
