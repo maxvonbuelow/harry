@@ -7,7 +7,7 @@ The Harry mesh compression algorithm has been presented and accepted at *Vision,
 
 This repository also includes independent software that can be used in other projects:
 * A (unofficial) reference implementation of the Cut-Border Machine (/cbm/) [Gumhold and Strasser, 1998]
-* An implementation of a arithmetic coder and a cumulative frequency table (/arith/) [Fenwick, 1994]
+* An implementation of a arithmetic coder and a cumulative frequency table (/arith/) [Moffat, Neal & Witten, 1998]
 * A CLI argument parser and progress bar (args.h, progress.h)
 * A PLY and OBJ loader with support of polygonal meshes with arbitrary attributes
 
