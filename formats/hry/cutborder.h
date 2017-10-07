@@ -28,30 +28,30 @@
 namespace hry {
 namespace cbm {
 
-template <typename T>
+template <typename T, typename V>
 struct DataTpl : T {
-	int idx;
+	V idx;
 
-	DataTpl() : idx(-1)
+	DataTpl() : idx(std::numeric_limits<V>::max())
 	{}
 	template <typename ...Params>
-	DataTpl(int i, Params &&...params) : idx(i), T(std::forward<Params>(params)...)
+	DataTpl(V i, Params &&...params) : idx(i), T(std::forward<Params>(params)...)
 	{}
 
 	bool isUndefined()
 	{
-		return idx == -1;
+		return idx == std::numeric_limits<V>::max();
 	}
 };
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const DataTpl<T> &d)
+template <typename T, typename V>
+std::ostream &operator<<(std::ostream &os, const DataTpl<T, V> &d)
 {
 	return os << d.idx << " [" << (T)d << "]";
 }
 
-template <typename T>
+template <typename T, typename V>
 struct CutBorder {
-	typedef DataTpl<T> Data;
+	typedef DataTpl<T, V> Data;
 	typedef std::list<Data> Elements;
 	struct Part : Elements {
 		bool isEdgeBegin;
@@ -70,7 +70,7 @@ struct CutBorder {
 	// acceleration structure for fast lookup if a vertex is currently on the cutboder
 	std::vector<unsigned char> vertices;
 
-	CutBorder(int num_vtx = 0) : vertices(num_vtx, 0)
+	CutBorder(V num_vtx = 0) : vertices(num_vtx, 0)
 	{}
 
 	Part &cur_part()
@@ -99,15 +99,15 @@ struct CutBorder {
 		return cur_part().front();
 	}
 
-	void activate_vertex(int i)
+	void activate_vertex(V i)
 	{
 		++vertices[i];
 	}
-	void deactivate_vertex(int i)
+	void deactivate_vertex(V i)
 	{
 		--vertices[i];
 	}
-	bool on_cut_border(int i)
+	bool on_cut_border(V i)
 	{
 		assert_ge(vertices[i], 0);
 		return vertices[i] != 0;
@@ -175,7 +175,7 @@ struct CutBorder {
 		Data d = *(++part.begin());
 		if (!part.isEdgeBegin) {
 			op = border();
-			return Data(-1);
+			return Data();
 		} else if (istri()) {
 			typename Elements::iterator it = part.begin();
 			deactivate_vertex((it++)->idx);

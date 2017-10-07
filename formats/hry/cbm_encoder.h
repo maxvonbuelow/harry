@@ -19,12 +19,9 @@
 
 #include <unordered_set>
 #include <vector>
-#include <cmath>
-#include <iostream>
 
 #include "cutborder.h"
 #include "cbm_base.h"
-#include "io.h"
 
 #include "../../assert.h"
 
@@ -58,20 +55,18 @@ struct Perm {
 	}
 };
 
-template <typename H, typename T, typename W, typename P>
+template <typename H, typename T, typename W, typename P, typename V = int, typename F = int>
 void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 {
-	CutBorder<CoderData> cutBorder(mesh.num_vtx());
-	typedef CutBorder<CoderData>::Data Data;
+	CutBorder<CoderData, V> cutBorder(mesh.num_vtx());
+	typedef typename CutBorder<CoderData, V>::Data Data;
 
-	mesh::vtxidx_t vertexIdx = 0;
-	mesh::faceidx_t fop;
+	V vertexIdx = 0;
 	Perm perm(mesh.num_vtx());
-	std::vector<int> order(mesh.num_vtx(), 0);
-	mesh::faceidx_t f;
+	std::vector<uint16_t> order(mesh.num_vtx(), 0);
+	F f;
 
 	prog.start(mesh.num_vtx());
-	int nm = 0;
 	int curtri, ntri;
 	typename H::Edge e0, e1, e2;
 	do {
@@ -83,14 +78,11 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 		f = mesh.face(e0);
 		ntri = mesh.num_edges(f) - 2;
 		INITOP initop;
-		nm += m0 + m1 + m2;
 		// Tri 3
 		if (m0 && m1 && m2) {
 			wr.tri111(ntri, perm.get(v0.idx), perm.get(v1.idx), perm.get(v2.idx));
 			initop = TRI111;
-		}
-		// Tri 2
-		else if (m0 && m1) {
+		} else if (m0 && m1) {
 			wr.tri110(ntri, perm.get(v0.idx), perm.get(v1.idx));
 			ac.vtx(f, mesh.edge(e2));
 			perm.map(v2.idx, vertexIdx++);
@@ -105,9 +97,7 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			ac.vtx(f, mesh.edge(e1));
 			perm.map(v1.idx, vertexIdx++);
 			initop = TRI101;
-		}
-		// Tri 1
-		else if (m0) {
+		} else if (m0) {
 			wr.tri100(ntri, perm.get(v0.idx));
 			ac.vtx(f, mesh.edge(e1));
 			ac.vtx(f, mesh.edge(e2));
@@ -125,9 +115,7 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			ac.vtx(f, mesh.edge(e1));
 			perm.map(v0.idx, vertexIdx++); perm.map(v1.idx, vertexIdx++);
 			initop = TRI001;
-		}
-		// Tri 0 = Initial
-		else {
+		} else {
 			wr.initial(ntri);
 			ac.vtx(f, mesh.edge(e0));
 			ac.vtx(f, mesh.edge(e1));
@@ -158,16 +146,8 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			typename H::Edge gateprev = cutBorder.left().a;
 			typename H::Edge gatenext = cutBorder.right().a;
 			bool seq_first = curtri == ntri;
-			if (seq_first) {
-				assert_eq(v0.idx, mesh.org(gate));
-// 				assert_eq(v1.idx, mesh.conn.dest(gate));
-
+			if (seq_first)
 				e0 = mesh.choose_twin(gate);
-			} else {
-// 				assert_eq(v0.idx, mesh.conn.dest(e1));
-// 				assert_eq(v1.idx, mesh.org(startedge));
-// 				e0 = INVALID_PAIR;
-			}
 
 			wr.order(order[v1.idx]);
 
@@ -188,7 +168,7 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 					e1 = mesh.next(e0);
 
 					assert_eq(mesh.org(e0), v1.idx);
-// 					assert_eq(mesh.conn.dest(e0), v0.idx);
+					assert_eq(mesh.conn.org(e1), v0.idx);
 				} else {
 					e1 = mesh.next(e1);
 				}
@@ -215,7 +195,6 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 						cutBorder.first->init(e1);
 						cutBorder.second->init(e2);
 						wr.nm(seq_first ? ntri : 0, perm.get(v2.idx));
-						++nm;
 					} else if (op == UNION) {
 						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, UNION);
 						wr.cutborderunion(seq_first ? ntri : 0, i, p);

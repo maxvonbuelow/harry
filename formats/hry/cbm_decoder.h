@@ -18,12 +18,9 @@
 #pragma once
 
 #include <vector>
-#include <cmath>
-#include <iostream>
 
 #include "cutborder.h"
 #include "cbm_base.h"
-#include "io.h"
 
 #include "../../assert.h"
 
@@ -32,17 +29,15 @@
 namespace hry {
 namespace cbm {
 
-template <typename H, typename R, typename P>
+template <typename H, typename R, typename P, typename V = int, typename F = int>
 void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 {
-	int nm = 0;
+	CutBorder<CoderData, V> cutBorder(mesh.num_vtx());
+	typedef typename CutBorder<CoderData, V>::Data Data;
+	std::vector<uint16_t> order(mesh.num_vtx(), 0);
 
-	CutBorder<CoderData> cutBorder(mesh.num_vtx());
-	typedef CutBorder<CoderData>::Data Data;
-	std::vector<int> order(mesh.num_vtx(), 0);
-
-	int vertexIdx = 0;
-	mesh::faceidx_t f;
+	V vertexIdx = 0;
+	F f;
 	int i, p;
 
 	prog.start(mesh.num_vtx());
@@ -120,9 +115,6 @@ void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 		v1.init(e1);
 		v2.init(e2);
 
-// 		assert_eq(builder.mesh.conn.org(e0), v0.idx);
-// 		assert_eq(builder.mesh.conn.org(e1), v1.idx);
-// 		assert_eq(builder.mesh.conn.org(e2), v2.idx);
 		cutBorder.initial(v0, v1, v2);
 
 		if (curtri == ntri) ++f;
@@ -162,12 +154,10 @@ void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 			case NM:
 				v2.idx = rd.vertid();
 				cutBorder.newVertex(v2);
-				++nm;
 				break;
 			case BORDER:
 				cutBorder.border();
 				v2 = Data(-1);
-// 				assert_eq(builder.mesh.conn.twin(gate), gate);
 				break;
 			}
 
@@ -179,13 +169,11 @@ void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 					e0 = mesh.edge(f); e1 = mesh.next(e0); e2 = mesh.next(e1);
 					mesh.set_org(e0, v1.idx); mesh.set_org(e1, v0.idx); mesh.set_org(e2, v2.idx);
 				} else {
-// 					e0 = INVALID_PAIR;
 					e1 = mesh.next(e1);
 					e2 = mesh.next(e1);
 					mesh.set_org(e2, v2.idx);
 				}
 				bool seq_last = curtri + 1 == ntri;
-// 				assert_eq(builder.builder_conn.cur_f, f);
 
 				switch (realop) {
 				case CONNFWD:
@@ -208,34 +196,18 @@ void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 				if (op == NEWVTX) ac.vtx(f, curtri + 2);
 				if (seq_first) ac.face(f, 0);
 				++curtri;
-				if (seq_last) {
-// 					builder.face_end();
-// 					++f;
-				}
 
-				if (seq_first) {
-// 					assert_eq(builder.mesh.conn.twin(gate), gate);
-// 					assert_eq(builder.mesh.conn.twin(e0), e0);
-					mesh.merge(gate, e0);
-				}
+				if (seq_first) mesh.merge(gate, e0);
 
 				switch (op) {
 				case CONNFWD:
-					if (seq_last && realop != BORDER) {
-// 						assert_eq(builder.mesh.conn.twin(gatenext), gatenext);
-// 						assert_eq(builder.mesh.conn.twin(e2), e2);
+					if (seq_last && realop != BORDER)
 						mesh.merge(gatenext, e2);
-					}
 
-					if (realop == CLOSE) {
-// 						assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
-// 						assert_eq(builder.mesh.conn.twin(e1), e1);
+					if (realop == CLOSE)
 						mesh.merge(gateprev, e1);
-					}
 					break;
 				case CONNBWD:
-// 					assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
-// 					assert_eq(builder.mesh.conn.twin(e1), e1);
 					mesh.merge(gateprev, e1);
 					break;
 				}
