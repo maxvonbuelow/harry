@@ -76,10 +76,10 @@ struct Reader {
 	void order(int i);
 	cbm::INITOP iop(); // Returns the current initial operation.
 	cbm::OP op(); // Returns the current cut-border operation.
-	uint32_t elem(); // Returns the current element offset.
-	uint16_t part(); // Returns the current part offset.
-	mesh::vtxidx_t vertid(); // Returns the global vertex index (used by the non-manifold operations).
-	uint16_t numtri(); // Returns the current number of triangles of a sequence.
+	int elem(); // Returns the current element offset.
+	int part(); // Returns the current part offset.
+	V vertid(); // Returns the global vertex index (used by the non-manifold operations).
+	int numtri(); // Returns the current number of triangles of a sequence.
 };
 ```
 
