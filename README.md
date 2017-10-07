@@ -3,7 +3,13 @@ Harry Mesh Compressor
 
 Implementation of a compression algorithm, which is lossless in terms of attributes and connectivity with optional quantization for attributes.
 
-The Harry mesh compression algorithm has been presented and accepted at *Vision, Modelling and Visualization 2017* in Bonn, Germany. For a reprint and further information, please refer to our project page (see below).
+The Harry mesh compression algorithm has been presented and accepted at *Vision, Modelling and Visualization 2017* in Bonn, Germany. For a reprint and further information, please refer to our [project page](http://www.gcc.tu-darmstadt.de/home/proj/meshcomp).
+
+This repository also includes independent software that can be used in other projects:
+* A (unofficial) reference implementation of the Cut-Border Machine (/cbm/) [Gumhold and Strasser, 1998]
+* An implementation of a arithmetic coder and a cumulative frequency table (/arith/) [Fenwick, 1994]
+* A CLI argument parser and progress bar (args.h, progress.h)
+* A PLY and OBJ loader with support of polygonal meshes with arbitrary attributes
 
 Build instructions
 ------
@@ -50,11 +56,6 @@ A PDF reprint is available on the project page (see below).
 
 Contact
 ------
-
 For any trouble with building, using or extending this software, please use the project's integrated issue tracker. We'll be happy to help you there or discuss feature requests.
 
 For requests not matching the above, please contact the maintainer at max.von.buelow(at)gcc.tu-darmstadt.de.
-
-Project Page
-------
-[GCC, TU Darmstadt](http://www.gcc.tu-darmstadt.de/home/proj/meshcomp)
