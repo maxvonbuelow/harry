@@ -52,7 +52,6 @@ int main()
 	std::vector<char> dst(data.size());
 	decode(stream, dst);
 
-
 	for (int i = 0; i < data.size(); ++i) {
 		if (data[i] != dst[i]) std::cout << "ERROR" << std::endl;
 	}
