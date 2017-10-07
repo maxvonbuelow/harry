@@ -10,7 +10,8 @@
 #include "writer.h"
 
 #include "common.h"
-#include "cbm_encoder.h"
+#include "../../cbm/encoder.h"
+#include "attrcode.h"
 #include "io.h"
 #include "../../progress.h"
 
@@ -43,11 +44,14 @@ struct MeshHandle {
 		return a;
 	}
 
-	inline Edge choose_twin(Edge i)
+	inline Edge choose_twin(Edge i, bool &success)
 	{
 		mesh::conn::fepair a = mesh.conn.twin(i);
-		if (a == i) return INVALID_PAIR;
-		if (remaining_faces.find(a.f()) == remaining_faces.end()) return INVALID_PAIR; // this can happen on non manifold edges
+		success = true;
+		if (a == i || remaining_faces.find(a.f()) == remaining_faces.end()) {
+			success = false;
+			return Edge();
+		}
 		remaining_faces.erase(a.f());
 		return a;
 	}
@@ -192,8 +196,7 @@ struct HeaderWriter {
 
 };
 
-template <typename D>
-void compress(std::ostream &os, mesh::Mesh &mesh, D &draw)
+void compress(std::ostream &os, mesh::Mesh &mesh)
 {
 	HeaderWriter hw(os);
 	hw.write_syntax(mesh);
@@ -202,13 +205,14 @@ void compress(std::ostream &os, mesh::Mesh &mesh, D &draw)
 	HryModels models(mesh);
 	io::writer wr(models, coder);
 	attrcode::AttrCoder<io::writer> ac(mesh, wr);
-	progress::handle prog;
 	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
 	MeshHandle meshhandle(mesh);
-	cbm::encode(meshhandle, draw, wr, ac, prog);
+	std::cout << "Encoding connectivity..." << std::endl;
+	cbm::encode(meshhandle, wr, ac);
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << std::endl;
 	progress::handle proga;
+	std::cout << "Encoding attributes..." << std::endl;
 	ac.encode(proga);
 	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
 	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
@@ -216,12 +220,9 @@ void compress(std::ostream &os, mesh::Mesh &mesh, D &draw)
 	coder.flush();
 }
 
-struct voiddrawer { template <typename ...T> void operator()(T &&...x) {} };
-
 void write(std::ostream &os, mesh::Mesh &mesh)
 {
-	voiddrawer draw;
-	compress(os, mesh, draw);
+	compress(os, mesh);
 }
 
 }

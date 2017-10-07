@@ -21,13 +21,10 @@
 #include <vector>
 
 #include "cutborder.h"
-#include "cbm_base.h"
+#include "base.h"
 
-#include "../../assert.h"
+#include "../assert.h"
 
-#include "attrcode.h"
-
-namespace hry {
 namespace cbm {
 
 struct Perm {
@@ -55,20 +52,20 @@ struct Perm {
 	}
 };
 
-template <typename H, typename T, typename W, typename P, typename V = int, typename F = int>
-void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
+template <typename M, typename W, typename A, typename V = int, typename F = int>
+void encode(M &mesh, W &wr, A &ac)
 {
-	CutBorder<CoderData, V> cutBorder(mesh.num_vtx());
-	typedef typename CutBorder<CoderData, V>::Data Data;
+	typedef CutBorder<CoderData<typename M::Edge>, V> CutBorder;
+	CutBorder cutBorder(mesh.num_vtx());
+	typedef typename CutBorder::Data Data;
 
 	V vertexIdx = 0;
 	Perm perm(mesh.num_vtx());
 	std::vector<uint16_t> order(mesh.num_vtx(), 0);
 	F f;
 
-	prog.start(mesh.num_vtx());
 	int curtri, ntri;
-	typename H::Edge e0, e1, e2;
+	typename M::Edge e0, e1, e2;
 	do {
 		Data v0, v1, v2, v2op;
 		curtri = 0;
@@ -123,12 +120,7 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 			perm.map(v0.idx, vertexIdx++); perm.map(v1.idx, vertexIdx++); perm.map(v2.idx, vertexIdx++);
 			initop = INIT;
 		}
-		assert_eq(mesh.org(e0), v0.idx);
-		assert_eq(mesh.org(e1), v1.idx);
-		assert_eq(mesh.org(e2), v2.idx);
 		ac.face(f, mesh.edge(e0));
-
-		handle(f, curtri, ntri, v0.idx, v1.idx, v2.idx, initop);
 
 		++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
 
@@ -142,18 +134,18 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 		while (!cutBorder.atEnd()) {
 			cutBorder.traverseStep(v0, v1);
 			Data data_gate = v0;
-			typename H::Edge gate = v0.a;
-			typename H::Edge gateprev = cutBorder.left().a;
-			typename H::Edge gatenext = cutBorder.right().a;
+			typename M::Edge gate = v0.a;
+			typename M::Edge gateprev = cutBorder.left().a;
+			typename M::Edge gatenext = cutBorder.right().a;
 			bool seq_first = curtri == ntri;
+			bool isvalid = true;
 			if (seq_first)
-				e0 = mesh.choose_twin(gate);
+				e0 = mesh.choose_twin(gate, isvalid);
 
 			wr.order(order[v1.idx]);
 
-			if (seq_first && e0 == INVALID_PAIR) {
+			if (seq_first && !isvalid) {
 				f = mesh.face(gate);
-				handle(f, 0, ntri, v0.idx, v1.idx, mesh.org(mesh.next(mesh.next(gate))), BORDER);
 				OP bop = cutBorder.border();
 
 				if (!mesh.border(gate)) mesh.split(gate); // fix bad border
@@ -178,7 +170,6 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 				bool seq_last = curtri + 1 == ntri;
 
 				if (!perm.isMapped(v2.idx)) {
-					handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, NEWVTX);
 					cutBorder.newVertex(v2);
 					cutBorder.first->init(e1);
 					cutBorder.second->init(e2);
@@ -190,29 +181,24 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 					OP op;
 					bool succ = cutBorder.findAndUpdate(v2, i, p, op);
 					if (!succ) {
-						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, NM);
 						cutBorder.newVertex(v2);
 						cutBorder.first->init(e1);
 						cutBorder.second->init(e2);
 						wr.nm(seq_first ? ntri : 0, perm.get(v2.idx));
 					} else if (op == UNION) {
-						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, UNION);
 						wr.cutborderunion(seq_first ? ntri : 0, i, p);
 						cutBorder.first->init(e1);
 						cutBorder.second->init(e2);
 					} else if (op == CONNFWD || op == CLOSE) {
-						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CONNFWD);
 						if (seq_last && mesh.twin(gatenext) != e2) mesh.merge(gatenext, e2);
 						if (op == CLOSE && mesh.twin(gateprev) != e1) mesh.merge(gateprev, e1);
 						wr.connectforward(seq_first ? ntri : 0);
 						if (op == CONNFWD) cutBorder.first->init(e1);
 					} else if (op == CONNBWD) {
-						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, CONNBWD);
 						if (mesh.twin(gateprev) != e1) mesh.merge(gateprev, e1);
 						wr.connectbackward(seq_first ? ntri : 0);
 						if (op == CONNBWD) cutBorder.first->init(e2);
 					} else {
-						handle(f, curtri, ntri, v1.idx, v0.idx, v2.idx, SPLIT);
 						wr.splitcutborder(seq_first ? ntri : 0, i);
 						cutBorder.first->init(e1);
 						cutBorder.second->init(e2);
@@ -225,13 +211,9 @@ void encode(H &mesh, T &handle, W &wr, attrcode::AttrCoder<W> &ac, P &prog)
 
 				++curtri;
 			}
-
-			prog(vertexIdx);
 		}
 	} while (!mesh.empty());
 	wr.end();
-	prog.end();
 } 
 
-}
 }

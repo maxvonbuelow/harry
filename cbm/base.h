@@ -10,11 +10,7 @@
 #pragma once
 
 #include <ostream>
-#include "../../structs/mesh.h"
 
-#define INVALID_PAIR mesh::conn::fepair()
-
-namespace hry {
 namespace cbm {
 
 enum INITOP {
@@ -37,18 +33,20 @@ static const char* iop2str(INITOP iop)
 	return lut[iop];
 }
 
+template <typename E>
 struct CoderData {
-	mesh::conn::fepair a;
+	E a;
 
 	inline CoderData()
 	{}
 
-	inline void init(mesh::conn::fepair _a)
+	inline void init(E _a)
 	{
 		a = _a;
 	}
 };
-inline std::ostream &operator<<(std::ostream &os, const CoderData &v)
+template <typename E>
+inline std::ostream &operator<<(std::ostream &os, const CoderData<E> &v)
 {
 	return os << v.a;
 }
@@ -62,5 +60,4 @@ e1     |  YES  |  YES  |  YES
 e2     |       |       |  YES
 */
 
-}
 }

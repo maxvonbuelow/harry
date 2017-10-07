@@ -20,30 +20,24 @@
 #include <vector>
 
 #include "cutborder.h"
-#include "cbm_base.h"
+#include "base.h"
 
-#include "../../assert.h"
-
-#include "attrcode.h"
-
-namespace hry {
 namespace cbm {
 
-template <typename H, typename R, typename P, typename V = int, typename F = int>
-void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
+template <typename M, typename R, typename A, typename V = int, typename F = int>
+void decode(M &mesh, R &rd, A &ac)
 {
-	CutBorder<CoderData, V> cutBorder(mesh.num_vtx());
-	typedef typename CutBorder<CoderData, V>::Data Data;
+	typedef CutBorder<CoderData<typename M::Edge>, V> CutBorder;
+	CutBorder cutBorder(mesh.num_vtx());
+	typedef typename CutBorder::Data Data;
 	std::vector<uint16_t> order(mesh.num_vtx(), 0);
 
 	V vertexIdx = 0;
 	F f;
 	int i, p;
 
-	prog.start(mesh.num_vtx());
-
 	int curtri, ntri;
-	typename H::Edge e0, e1, e2;
+	typename M::Edge e0, e1, e2;
 	do {
 		Data v0, v1, v2;
 		INITOP initop = rd.iop();
@@ -121,9 +115,9 @@ void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 
 		while (!cutBorder.atEnd()) {
 			cutBorder.traverseStep(v0, v1);
-			typename H::Edge gate = v0.a;
-			typename H::Edge gateprev = cutBorder.left().a;
-			typename H::Edge gatenext = cutBorder.right().a;
+			typename M::Edge gate = v0.a;
+			typename M::Edge gateprev = cutBorder.left().a;
+			typename M::Edge gatenext = cutBorder.right().a;
 
 			rd.order(order[v1.idx]);
 
@@ -157,7 +151,7 @@ void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 				break;
 			case BORDER:
 				cutBorder.border();
-				v2 = Data(-1);
+				v2 = Data();
 				break;
 			}
 
@@ -212,12 +206,8 @@ void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 					break;
 				}
 			}
-
-			prog(vertexIdx);
 		}
 	} while (1);
-	prog.end();
 }
 
-}
 }

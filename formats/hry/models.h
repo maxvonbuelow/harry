@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "cutborder.h"
+#include "../../cbm/base.h"
 
 #include "../../arith/coder.h"
 #include "../../arith/model.h"

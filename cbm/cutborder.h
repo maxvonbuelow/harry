@@ -21,11 +21,10 @@
 #include <list>
 #include <vector>
 
-#include "cbm_base.h"
+#include "base.h"
 
-#include "../../assert.h"
+#include "../assert.h"
 
-namespace hry {
 namespace cbm {
 
 template <typename T, typename V>
@@ -316,5 +315,4 @@ struct CutBorder {
 	}
 };
 
-}
 }

@@ -10,7 +10,8 @@
 #include "reader.h"
 
 #include "common.h"
-#include "cbm_decoder.h"
+#include "../../cbm/decoder.h"
+#include "attrcode.h"
 #include "io.h"
 #include "../../progress.h"
 
@@ -181,9 +182,8 @@ void read(std::istream &is, mesh::Mesh &mesh)
 	HryModels models(builder.mesh);
 	io::reader rd(models, coder);
 	attrcode::AttrDecoder<io::reader> ac(builder, rd);
-	progress::handle prog;
 	MeshHandle meshhandle(mesh);
-	cbm::decode(meshhandle, rd, ac, prog);
+	cbm::decode(meshhandle, rd, ac);
 	progress::handle proga;
 	ac.decode(proga);
 }
