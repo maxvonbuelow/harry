@@ -150,9 +150,9 @@ struct Builder {
 	}
 
 	// Connectivity
-	void face_begin(ledgeidx_t ne)
+	faceidx_t face_begin(ledgeidx_t ne)
 	{
-		builder_conn.face_begin(ne);
+		return builder_conn.face_begin(ne);
 	}
 	void face_end()
 	{

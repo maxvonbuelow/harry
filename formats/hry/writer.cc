@@ -17,6 +17,85 @@
 namespace hry {
 namespace writer {
 
+struct MeshHandle {
+	typedef mesh::conn::fepair Edge;
+
+	std::unordered_set<mesh::faceidx_t> remaining_faces;
+	mesh::Mesh &mesh;
+
+	inline MeshHandle(mesh::Mesh &_mesh) : mesh(_mesh)
+	{
+		for (mesh::faceidx_t i = 0; i < mesh.num_face(); ++i) {
+			remaining_faces.insert(i);
+		}
+	}
+
+	mesh::vtxidx_t num_vtx()
+	{
+		return mesh.num_vtx();
+	}
+
+	inline Edge choose_tri()
+	{
+		mesh::faceidx_t f = remaining_faces.find(0) == remaining_faces.end() ? *remaining_faces.begin() : 0;
+		Edge a = mesh::conn::fepair(f, 0);
+		remaining_faces.erase(f);
+		return a;
+	}
+
+	inline Edge choose_twin(Edge i)
+	{
+		mesh::conn::fepair a = mesh.conn.twin(i);
+		if (a == i) return INVALID_PAIR;
+		if (remaining_faces.find(a.f()) == remaining_faces.end()) return INVALID_PAIR; // this can happen on non manifold edges
+		remaining_faces.erase(a.f());
+		return a;
+	}
+
+	inline bool empty()
+	{
+		return remaining_faces.empty();
+	}
+
+	inline mesh::vtxidx_t org(Edge e)
+	{
+		return mesh.conn.org(e);
+	}
+	inline Edge next(Edge e)
+	{
+		return mesh.conn.enext(e);
+	}
+	inline Edge twin(Edge e)
+	{
+		return mesh.conn.twin(e);
+	}
+	inline void merge(Edge a, Edge b)
+	{
+		mesh.conn.fmerge(a, b);
+	}
+	inline void split(Edge e)
+	{
+		merge(e, e);
+	}
+	bool border(Edge e)
+	{
+		return twin(e) == e;
+	}
+
+	mesh::ledgeidx_t num_edges(mesh::faceidx_t f)
+	{
+		return mesh.conn.num_edges(f);
+	}
+	mesh::faceidx_t face(Edge e)
+	{
+		return mesh.conn.face(e);
+	}
+	mesh::ledgeidx_t edge(Edge e)
+	{
+		return e.e();
+	}
+};
+
 struct HeaderWriter {
 	std::ostream &os;
 
@@ -125,7 +204,8 @@ void compress(std::ostream &os, mesh::Mesh &mesh, D &draw)
 	attrcode::AttrCoder<io::writer> ac(mesh, wr);
 	progress::handle prog;
 	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
-	cbm::encode(mesh, draw, wr, ac, prog);
+	MeshHandle meshhandle(mesh);
+	cbm::encode(meshhandle, draw, wr, ac, prog);
 	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << std::endl;
 	progress::handle proga;

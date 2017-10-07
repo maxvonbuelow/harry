@@ -17,6 +17,41 @@
 namespace hry {
 namespace reader {
 
+struct MeshHandle {
+	typedef mesh::conn::fepair Edge;
+
+	mesh::Mesh &mesh;
+
+	MeshHandle(mesh::Mesh &_mesh) : mesh(_mesh)
+	{}
+
+	mesh::vtxidx_t num_vtx()
+	{
+		return mesh.num_vtx();
+	}
+
+	inline mesh::faceidx_t add_face(mesh::ledgeidx_t ne)
+	{
+		return mesh.conn.add_face(ne);
+	}
+	inline Edge edge(mesh::faceidx_t f)
+	{
+		return Edge(f, 0);
+	}
+	inline void set_org(Edge e, mesh::vtxidx_t o)
+	{
+		mesh.conn.set_org(e, o);
+	}
+	inline Edge next(Edge e)
+	{
+		return mesh.conn.enext(e);
+	}
+	inline void merge(Edge a, Edge b)
+	{
+		mesh.conn.fmerge(a, b);
+	}
+};
+
 struct HeaderReader {
 	std::istream &is;
 
@@ -147,7 +182,8 @@ void read(std::istream &is, mesh::Mesh &mesh)
 	io::reader rd(models, coder);
 	attrcode::AttrDecoder<io::reader> ac(builder, rd);
 	progress::handle prog;
-	cbm::decode(builder, rd, ac, prog);
+	MeshHandle meshhandle(mesh);
+	cbm::decode(meshhandle, rd, ac, prog);
 	progress::handle proga;
 	ac.decode(proga);
 }

@@ -130,6 +130,10 @@ struct Conn {
 		edges[f.off(fi) + v].org = o;
 		mnum_vtx = std::max(mnum_vtx, o + 1);
 	}
+	inline void set_org(fepair a, vtxidx_t o)
+	{
+		set_org(a.f(), a.e(), o);
+	}
 	inline fepair enext(fepair a) const
 	{
 		return fepair(a.f(), en(a.e(), num_edges(a.f())));
@@ -158,6 +162,10 @@ struct Conn {
 	{
 		edges[edge(a)].twin = b;
 		edges[edge(b)].twin = a;
+	}
+	inline void splot(fepair a)
+	{
+		fmerge(a, a);
 	}
 };
 

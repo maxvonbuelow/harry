@@ -32,25 +32,23 @@
 namespace hry {
 namespace cbm {
 
-template <typename R, typename P>
-void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
+template <typename H, typename R, typename P>
+void decode(H &mesh, R &rd, attrcode::AttrDecoder<R> &ac, P &prog)
 {
-	builder.noautomerge();
-
 	int nm = 0;
 
-	CutBorder<CoderData> cutBorder(builder.num_vtx());
+	CutBorder<CoderData> cutBorder(mesh.num_vtx());
 	typedef CutBorder<CoderData>::Data Data;
-	std::vector<int> order(builder.num_vtx(), 0);
+	std::vector<int> order(mesh.num_vtx(), 0);
 
 	int vertexIdx = 0;
-	mesh::faceidx_t f = 0;
+	mesh::faceidx_t f;
 	int i, p;
 
-	prog.start(builder.num_vtx());
+	prog.start(mesh.num_vtx());
 
 	int curtri, ntri;
-	mesh::conn::fepair startedge, curedge;
+	typename H::Edge e0, e1, e2;
 	do {
 		Data v0, v1, v2;
 		INITOP initop = rd.iop();
@@ -85,10 +83,11 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 		ntri = rd.numtri();
 		++order[v0.idx]; ++order[v1.idx]; ++order[v2.idx];
 
-		builder.face_begin(ntri + 2); builder.set_org(v0.idx); builder.set_org(v1.idx); builder.set_org(v2.idx);
+		f = mesh.add_face(ntri + 2);
+		e0 = mesh.edge(f); e1 = mesh.next(e0); e2 = mesh.next(e1);
+		mesh.set_org(e0, v0.idx); mesh.set_org(e1, v1.idx); mesh.set_org(e2, v2.idx);
 
 		++curtri;
-		if (curtri == ntri) builder.face_end();
 
 		switch (initop) {
 		case INIT:
@@ -115,26 +114,24 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 		case TRI111:
 			break;
 		}
+		ac.face(f, 0);
 
-		mesh::conn::fepair e0(f, 0), e1(f, 1), e2(f, 2);
 		v0.init(e0);
 		v1.init(e1);
 		v2.init(e2);
 
-		assert_eq(builder.mesh.conn.org(e0), v0.idx);
-		assert_eq(builder.mesh.conn.org(e1), v1.idx);
-		assert_eq(builder.mesh.conn.org(e2), v2.idx);
+// 		assert_eq(builder.mesh.conn.org(e0), v0.idx);
+// 		assert_eq(builder.mesh.conn.org(e1), v1.idx);
+// 		assert_eq(builder.mesh.conn.org(e2), v2.idx);
 		cutBorder.initial(v0, v1, v2);
 
 		if (curtri == ntri) ++f;
 
-		startedge = e0; curedge = e1;
-
 		while (!cutBorder.atEnd()) {
 			cutBorder.traverseStep(v0, v1);
-			mesh::conn::fepair gate = v0.a;
-			mesh::conn::fepair gateprev = cutBorder.left().a;
-			mesh::conn::fepair gatenext = cutBorder.right().a;
+			typename H::Edge gate = v0.a;
+			typename H::Edge gateprev = cutBorder.left().a;
+			typename H::Edge gatenext = cutBorder.right().a;
 
 			rd.order(order[v1.idx]);
 
@@ -170,7 +167,7 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 			case BORDER:
 				cutBorder.border();
 				v2 = Data(-1);
-				assert_eq(builder.mesh.conn.twin(gate), gate);
+// 				assert_eq(builder.mesh.conn.twin(gate), gate);
 				break;
 			}
 
@@ -178,19 +175,17 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 				if (seq_first) {
 					ntri = rd.numtri();
 					curtri = 0;
-					builder.face_begin(ntri + 2);
-					builder.set_org(v1.idx);
-					builder.set_org(v0.idx);
-					builder.set_org(v2.idx);
-					e0 = mesh::conn::fepair(f, 0); e1 = curedge = mesh::conn::fepair(f, 1); e2 = mesh::conn::fepair(f, 2);
+					f = mesh.add_face(ntri + 2);
+					e0 = mesh.edge(f); e1 = mesh.next(e0); e2 = mesh.next(e1);
+					mesh.set_org(e0, v1.idx); mesh.set_org(e1, v0.idx); mesh.set_org(e2, v2.idx);
 				} else {
-					builder.set_org(v2.idx);
-					e0 = INVALID_PAIR;
-					e1 = curedge = builder.mesh.conn.enext(curedge);
-					e2 = builder.mesh.conn.enext(e1);
+// 					e0 = INVALID_PAIR;
+					e1 = mesh.next(e1);
+					e2 = mesh.next(e1);
+					mesh.set_org(e2, v2.idx);
 				}
 				bool seq_last = curtri + 1 == ntri;
-				assert_eq(builder.builder_conn.cur_f, f);
+// 				assert_eq(builder.builder_conn.cur_f, f);
 
 				switch (realop) {
 				case CONNFWD:
@@ -214,34 +209,34 @@ void decode(mesh::Builder &builder, R &rd, attrcode::AttrDecoder<R> &ac, P &prog
 				if (seq_first) ac.face(f, 0);
 				++curtri;
 				if (seq_last) {
-					builder.face_end();
-					++f;
+// 					builder.face_end();
+// 					++f;
 				}
 
 				if (seq_first) {
-					assert_eq(builder.mesh.conn.twin(gate), gate);
-					assert_eq(builder.mesh.conn.twin(e0), e0);
-					builder.mesh.conn.fmerge(gate, e0);
+// 					assert_eq(builder.mesh.conn.twin(gate), gate);
+// 					assert_eq(builder.mesh.conn.twin(e0), e0);
+					mesh.merge(gate, e0);
 				}
 
 				switch (op) {
 				case CONNFWD:
 					if (seq_last && realop != BORDER) {
-						assert_eq(builder.mesh.conn.twin(gatenext), gatenext);
-						assert_eq(builder.mesh.conn.twin(e2), e2);
-						builder.mesh.conn.fmerge(gatenext, e2);
+// 						assert_eq(builder.mesh.conn.twin(gatenext), gatenext);
+// 						assert_eq(builder.mesh.conn.twin(e2), e2);
+						mesh.merge(gatenext, e2);
 					}
 
 					if (realop == CLOSE) {
-						assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
-						assert_eq(builder.mesh.conn.twin(e1), e1);
-						builder.mesh.conn.fmerge(gateprev, e1);
+// 						assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
+// 						assert_eq(builder.mesh.conn.twin(e1), e1);
+						mesh.merge(gateprev, e1);
 					}
 					break;
 				case CONNBWD:
-					assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
-					assert_eq(builder.mesh.conn.twin(e1), e1);
-					builder.mesh.conn.fmerge(gateprev, e1);
+// 					assert_eq(builder.mesh.conn.twin(gateprev), gateprev);
+// 					assert_eq(builder.mesh.conn.twin(e1), e1);
+					mesh.merge(gateprev, e1);
 					break;
 				}
 			}
