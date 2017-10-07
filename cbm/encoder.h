@@ -27,26 +27,27 @@
 
 namespace cbm {
 
+template <typename V>
 struct Perm {
-	std::vector<int> perm;
+	std::vector<V> perm;
 
-	inline Perm(int n) : perm(n, -1)
+	inline Perm(V n) : perm(n, std::numeric_limits<V>::max())
 	{}
 
-	inline bool isMapped(int idx)
+	inline bool isMapped(V idx)
 	{
-		return perm[idx] != -1;
+		return perm[idx] != std::numeric_limits<V>::max();
 	}
 
-	inline void map(int a, int b)
+	inline void map(V a, V b)
 	{
 		perm[a] = b;
 	}
-	inline void unmap(int a)
+	inline void unmap(V a)
 	{
-		perm[a] = -1;
+		perm[a] = std::numeric_limits<V>::max();
 	}
-	inline int get(int idx)
+	inline V get(V idx)
 	{
 		return perm[idx];
 	}
@@ -60,7 +61,7 @@ void encode(M &mesh, W &wr, A &ac)
 	typedef typename CutBorder::Data Data;
 
 	V vertexIdx = 0;
-	Perm perm(mesh.num_vtx());
+	Perm<V> perm(mesh.num_vtx());
 	std::vector<uint16_t> order(mesh.num_vtx(), 0);
 	F f;
 

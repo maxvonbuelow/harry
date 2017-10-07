@@ -183,7 +183,7 @@ void read(std::istream &is, mesh::Mesh &mesh)
 	io::reader rd(models, coder);
 	attrcode::AttrDecoder<io::reader> ac(builder, rd);
 	MeshHandle meshhandle(mesh);
-	cbm::decode(meshhandle, rd, ac);
+	cbm::decode<MeshHandle, io::reader, attrcode::AttrDecoder<io::reader>, mesh::vtxidx_t, mesh::faceidx_t>(meshhandle, rd, ac);
 	progress::handle proga;
 	ac.decode(proga);
 }
