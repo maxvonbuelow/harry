@@ -18,8 +18,6 @@
 
 namespace util {
 
-typedef std::unordered_map<std::string, int> stringmap;
-
 inline void skip_ws(std::istream &is)
 {
 	while (std::isspace(is.peek()) && is.peek() != '\n') is.get();
@@ -68,34 +66,6 @@ int line2list(std::istream &is, T *list, int max)
 		util::skip_ws(is);
 	}
 	return i;
-}
-
-inline bool mkdir(const char *path)
-{
-#ifdef _WIN32
-	if (::_mkdir(path) < 0) return false;
-#else // _WIN32
-	if (::mkdir(path, S_IRWXU | S_IRGRP | S_IXGRP) < 0) return false;
-#endif // _WIN32
-	return true;
-}
-
-enum FileType { FILE, DIR, OTHER, ERROR };
-inline FileType filetype(const char *path)
-{
-	struct stat s;
-	if (::stat(path, &s) != 0) return ERROR;
-	if (s.st_mode & S_IFREG) return FILE;
-	if (s.st_mode & S_IFDIR) return DIR;
-	return OTHER;
-}
-inline bool isfile(const char *path)
-{
-	return filetype(path) == FILE;
-}
-inline bool isdir(const char *path)
-{
-	return filetype(path) == DIR;
 }
 
 inline std::streampos linenum_approx(std::istream &is, int samples = 100)
