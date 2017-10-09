@@ -191,7 +191,7 @@ public:
 
 		if (i == optid_help) {
 			show_usage();
-			std::exit(0);
+			std::exit(EXIT_SUCCESS);
 			i = next();
 		}
 		return i;
@@ -257,7 +257,7 @@ private:
 			std::cerr << "Error: Invalid enum value" << std::endl;
 			break;
 		}
-		std::exit(1);
+		std::exit(EXIT_FAILURE);
 	}
 
 	void inc()
