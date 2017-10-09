@@ -38,18 +38,32 @@ struct Args {
 		const int ARG_ATT = args.add_opt('a', "attr",        "Select attribute");
 		const int ARG_QUA = args.add_opt('q', "quant",       "Quantization bits");
 		const int ARG_CQU = args.add_opt('c', "clear-quant", "Clear all quantization first");
+#ifdef WITH_PLY
 		const int ARG_PAS = args.add_opt(     "ply-ascii",   "PLY writer: Use ASCII format");
+#endif
 
 		int cur_l, cur_a = -1;
 		for (int arg = args.next(); arg != args::parser::end; arg = args.next()) {
 			if (arg == ARG_IN)       in         = args.val<std::string>();
 			else if (arg == ARG_OUT) out        = args.val<std::string>();
-			else if (arg == ARG_FMT) fmt        = args.map("hry"s, unified::writer::HRY, "ply"s, unified::writer::PLY, "obj"s, unified::writer::OBJ);
+			else if (arg == ARG_FMT) fmt        = args.map(
+#ifdef WITH_HRY
+				"hry"s, unified::writer::HRY,
+#endif
+#ifdef WITH_PLY
+				"ply"s, unified::writer::PLY,
+#endif
+#ifdef WITH_OBJ
+				"obj"s, unified::writer::OBJ
+#endif
+			);
 			else if (arg == ARG_LST) cur_l      = args.val<int>();
 			else if (arg == ARG_ATT) cur_a      = args.val<int>();
 			else if (arg == ARG_QUA) { quant.push_back(Quant{ cur_l, cur_a, args.val<int>() }); cur_a = -1; }
 			else if (arg == ARG_CQU) clearquant = true;
+#ifdef WITH_PLY
 			else if (arg == ARG_PAS) ply_ascii  = true;
+#endif
 		}
 	}
 };

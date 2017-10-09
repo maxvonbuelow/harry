@@ -15,9 +15,15 @@
 #include <fstream>
 #include <endian.h>
 
+#ifdef WITH_HRY
 #include "hry/reader.h"
+#endif
+#ifdef WITH_PLY
 #include "ply/reader.h"
+#endif
+#ifdef WITH_OBJ
 #include "obj/reader.h"
+#endif
 
 namespace unified {
 namespace reader {
@@ -49,15 +55,21 @@ void read(std::istream &is, const std::string &fn, mesh::Mesh &mesh)
 	std::string dir = fn.substr(0, fn.find_last_of("/\\"));
 	switch (get_mesh_type(is, fn))
 	{
+#ifdef WITH_HRY
 	case HRY:
 		hry::reader::read(is, mesh);
 		break;
+#endif
+#ifdef WITH_PLY
 	case PLY:
 		ply::reader::read(is, mesh);
 		break;
+#endif
+#ifdef WITH_OBJ
 	case OBJ:
 		obj::reader::read(is, dir, mesh);
 		break;
+#endif
 	default:
 		throw std::runtime_error("Currently unimplemented");
 	}

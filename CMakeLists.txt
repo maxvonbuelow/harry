@@ -29,6 +29,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w") # :)
 
 set(FMTSRC "")
 FOREACH(f ${FMTS})
+	string(TOUPPER ${f} F)
+	add_definitions(-DWITH_${F})
 	LIST(APPEND FMTSRC "formats/${f}/reader.cc")
 	LIST(APPEND FMTSRC "formats/${f}/writer.cc")
 ENDFOREACH(f)

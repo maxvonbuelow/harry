@@ -14,9 +14,15 @@
 #include <ostream>
 #include <fstream>
 
+#ifdef WITH_HRY
 #include "hry/writer.h"
+#endif
+#ifdef WITH_PLY
 #include "ply/writer.h"
+#endif
+#ifdef WITH_OBJ
 #include "obj/writer.h"
+#endif
 
 namespace unified {
 namespace writer {
@@ -43,15 +49,21 @@ void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType t
 	type = type == UNKNOWN ? get_mesh_type(fn) : type;
 	switch (type)
 	{
+#ifdef WITH_HRY
 	case HRY:
 		hry::writer::write(os, mesh);
 		break;
+#endif
+#ifdef WITH_PLY
 	case PLY:
 		ply::writer::write(os, mesh, ply_ascii);
 		break;
+#endif
+#ifdef WITH_OBJ
 	case OBJ:
 		obj::writer::write(os, dir, mesh);
 		break;
+#endif
 	default:
 		throw std::runtime_error("Currently unimplemented");
 	}
