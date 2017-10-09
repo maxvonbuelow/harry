@@ -202,7 +202,8 @@ public:
 		val_read = true;
 		T v;
 		try {
-			v = Conv<T, char*>()(curopt);
+			if (!curopt) err(E_CNT_LT);
+			else v = Conv<T, char*>()(curopt);
 		} catch (...) {
 			err(E_CAST);
 			return T();
