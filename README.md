@@ -27,7 +27,7 @@ Usage examples
 * Compress a PLY file losslessly: `./harry in.ply out.hry`
 * Compress a PLY file with 14 bit quantization: `./harry in.ply out.hry -l1 -q14`
 * Compress a OBJ file with 14 bit quantization for positions and 10 bits for normals: `./harry in.ply out.hry -l0 -q14 -l1 -q10`
-* Decompress to a PLY file: `./harry in.hry out.hry`
+* Decompress to a PLY file: `./harry in.hry out.ply`
 
 Please note that PLY faces will be stored in attribute list 0 and vertices in attribute list 1. OBJ positions will be stored in attribute list 0, followed by texture coordinates and normals for each region.
 
@@ -51,7 +51,7 @@ If you decide to use our code or code based on this project in your application,
 	month = {September}
 }
 ```
-A PDF reprint is available on the project page (see below).
+A PDF reprint is available on the project page.
 
 
 Contact
