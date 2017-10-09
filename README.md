@@ -16,9 +16,8 @@ Build instructions
 ```
 git clone https://github.com/magcks/harry
 cd harry
-mkdir build
-cd $_
-cmake -DCMAKE_BUILD_TYPE=Release ..
+mkdir build && cd $_
+cmake ..
 make
 ```
 
