@@ -412,7 +412,6 @@ public:
 	{
 		msize = size;
 		mdata.resize(size * mfmt.bytes());
-		mdata.shrink_to_fit();
 	}
 	std::size_t frontidx()
 	{
