@@ -205,18 +205,10 @@ void compress(std::ostream &os, mesh::Mesh &mesh)
 	HryModels models(mesh);
 	io::writer wr(models, coder);
 	attrcode::AttrCoder<io::writer> ac(mesh, wr);
-	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
 	MeshHandle meshhandle(mesh);
-	std::cout << "Encoding connectivity..." << std::endl;
 	cbm::encode<MeshHandle, io::writer, attrcode::AttrCoder<io::writer>, mesh::vtxidx_t, mesh::faceidx_t>(meshhandle, wr, ac);
-	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms" << std::endl;
 	progress::handle proga;
-	std::cout << "Encoding attributes..." << std::endl;
 	ac.encode(proga);
-	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-	std::cout << "Took: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms" << std::endl;
-	std::cout << "Total: " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0).count() << " ms" << std::endl;
 	coder.flush();
 }
 

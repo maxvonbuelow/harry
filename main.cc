@@ -94,16 +94,25 @@ int main(int argc, char **argv)
 	Args args(argc, argv);
 
 	mesh::Mesh mesh;
-	std::cout << "Reading input" << std::endl;
+	std::cout << "Reading input..." << std::endl;
+	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
 	unified::reader::read(args.in, mesh);
+	std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
+	std::cout << "Reading input took " << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() << " ms." << std::endl;
 
 	if (!args.quant.empty() || args.clearquant) {
-		std::cout << "Quantization" << std::endl;
+		std::cout << "Quantization..." << std::endl;
 		std::vector<quant::Quant> quant;
 		convert_quant(mesh.attrs, args.quant, quant);
 		quant::requant(mesh.attrs, quant, args.clearquant);
 	}
+	std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+	if (!args.quant.empty() || args.clearquant) std::cout << "Quantization took " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << " ms." << std::endl;
 
-	std::cout << "Writing output" << std::endl;
+	std::cout << "Writing output..." << std::endl;
 	unified::writer::write(args.out, mesh, args.fmt, args.ply_ascii);
+
+	std::chrono::high_resolution_clock::time_point t3 = std::chrono::high_resolution_clock::now();
+	std::cout << "Writing output took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << " ms." << std::endl;
+	std::cout << "Total compression time: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count() << " ms" << std::endl;
 }
