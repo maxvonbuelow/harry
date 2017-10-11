@@ -16,13 +16,13 @@
 #include <limits>
 #include <numeric>
 #include <algorithm>
-#include <endian.h>
 
-#include "../../structs/mixing.h"
-#include "../../structs/types.h"
-#include "../../structs/quant.h"
-#include "../../utils.h"
-#include "../../progress.h"
+#include "structs/mixing.h"
+#include "structs/types.h"
+#include "structs/quant.h"
+#include "utils/io.h"
+#include "utils/progress.h"
+#include "utils/endian.h"
 
 namespace ply {
 namespace reader {

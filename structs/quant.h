@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "../tplints.h"
+#include "utils/types.h"
 #include "mixing.h"
 
 #include <type_traits>

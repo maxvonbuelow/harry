@@ -9,6 +9,9 @@
 
 #pragma once
 
+#include <limits>
+#include <vector>
+
 #include "io.h"
 #include "transform.h"
 #include "prediction.h"
@@ -273,7 +276,6 @@ struct AbsAttrCoder {
 
 		// get hist
 		curhist = 0;
-		assert(face_is_encoded[f]);
 		face_is_encoded[f] = false;
 		tfan_corner(e, r);
 		face_is_encoded[f] = true;

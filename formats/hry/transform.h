@@ -10,7 +10,8 @@
 #pragma once
 
 #include <type_traits>
-#include "../../tplints.h"
+
+#include "utils/types.h"
 
 namespace hry {
 namespace transform {

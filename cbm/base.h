@@ -50,6 +50,7 @@ inline std::ostream &operator<<(std::ostream &os, const CoderData<E> &v)
 {
 	return os << v.a;
 }
+
 /*
 sequence element edge validness:
 

@@ -10,7 +10,9 @@
 #pragma once
 
 #include <istream>
-#include "../../structs/mesh.h"
+#include <string>
+
+#include "structs/mesh.h"
 
 namespace obj {
 namespace reader {

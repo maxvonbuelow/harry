@@ -23,8 +23,6 @@
 #include "cutborder.h"
 #include "base.h"
 
-#include "../assert.h"
-
 namespace cbm {
 
 template <typename V>
@@ -160,8 +158,9 @@ void encode(M &mesh, W &wr, A &ac)
 
 					e1 = mesh.next(e0);
 
+#ifdef HAVE_ASSERT
 					assert_eq(mesh.org(e0), v1.idx);
-					assert_eq(mesh.conn.org(e1), v0.idx);
+#endif
 				} else {
 					e1 = mesh.next(e1);
 				}

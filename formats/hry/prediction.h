@@ -9,7 +9,11 @@
 
 #pragma once
 
+#include <algorithm>
+#include <type_traits>
+
 #include "transform.h"
+#include "utils/types.h"
 
 namespace hry {
 namespace pred {
@@ -42,7 +46,6 @@ int_t<sizeof(T)> uint2int(uint_t<sizeof(T)> val)
 template <class T>
 T decodeDelta(const T delta, const T pred, const int bits, std::false_type)
 {
-// 	return delta ^ pred;
 	const T delta_mask[2] = { T(0), ~T(0) };
 	const T max_pos = mask<T>(bits) - pred;
 	// this is a corner case where the whole range is positive only
@@ -78,7 +81,6 @@ T decodeDelta(const T delta, const T pred, const int q)
 template <class T>
 T encodeDelta(const T raw, const T pred,  int bits, std::false_type)
 {
-// 	return raw ^ pred;
 	const T max_pos = mask<T>(bits) - pred;
 	// this is a corner case where the whole range is positive only
 	if (pred == T(0)) return raw;
@@ -104,7 +106,9 @@ T encodeDelta(const T raw, const T pred, const int bits, std::true_type)
 	uint_t<sizeof(T)> res = encodeDelta(int2uint<T>(rawint), int2uint<T>(predint), bits, std::false_type());
 	T r = *((T*)&res);
 
+#ifdef HAVE_ASSERT
 	assert_eq(raw, decodeDelta(r, pred, bits));
+#endif
 	
 	return r;
 }

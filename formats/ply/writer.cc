@@ -11,9 +11,11 @@
 
 #include <vector>
 #include <set>
+#include <string>
 
-#include "../../structs/mixing.h"
-#include "../../structs/types.h"
+#include "structs/mixing.h"
+#include "structs/types.h"
+#include "utils/endian.h"
 
 namespace ply {
 namespace writer {

@@ -34,5 +34,5 @@ foreach(f ${FMTS})
 	LIST(APPEND FMTSRC "formats/${f}/writer.cc")
 endforeach()
 
-add_executable(${EXE_NAME} main.cc assert.cc ${FMTSRC})
+add_executable(${EXE_NAME} main.cc ${FMTSRC})
 target_link_libraries(${EXE_NAME} ${CMAKE_THREAD_LIBS_INIT})

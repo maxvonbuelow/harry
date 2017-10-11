@@ -10,7 +10,7 @@
 #pragma once
 
 #include <istream>
-#include "../../structs/mesh.h"
+#include "structs/mesh.h"
 
 namespace ply {
 namespace reader {

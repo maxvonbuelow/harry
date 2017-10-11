@@ -7,13 +7,15 @@
  * of the BSD 3-Clause license. See the LICENSE.txt file for details.
  */
 
+#include <stdexcept>
+
 #include "reader.h"
 
 #include "common.h"
-#include "../../cbm/decoder.h"
 #include "attrcode.h"
 #include "io.h"
-#include "../../progress.h"
+#include "cbm/decoder.h"
+#include "utils/progress.h"
 
 namespace hry {
 namespace reader {
@@ -157,8 +159,8 @@ struct HeaderReader {
 			}
 			mesh::listidx_t l = builder.add_list(fmt, interps, targets[i]);
 			builder.alloc_attr(l, s);
-			is.read((char*)builder.mesh.attrs[l].min().data(), builder.mesh.attrs[l].min().bytes()); // TODO
-			is.read((char*)builder.mesh.attrs[l].max().data(), builder.mesh.attrs[l].max().bytes()); // TODO
+			is.read((char*)builder.mesh.attrs[l].min().data(), builder.mesh.attrs[l].min().bytes());
+			is.read((char*)builder.mesh.attrs[l].max().data(), builder.mesh.attrs[l].max().bytes());
 		}
 
 		// read tri types

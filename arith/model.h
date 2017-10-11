@@ -56,7 +56,9 @@ struct ModelMult : Model<TF> {
 
 	void enc(Encoder<TF> &coder, const unsigned char *s, int n)
 	{
+#ifdef HAVE_ASSERT
 		assert_eq(sizeof(T), n);
+#endif
 		for (int i = 0; i < sizeof(T); ++i) {
 			coder(this->stats[i], s[i]);
 			this->stats[i].inc(s[i]);
@@ -65,7 +67,9 @@ struct ModelMult : Model<TF> {
 
 	void dec(Decoder<TF> &coder, unsigned char *s, int n)
 	{
+#ifdef HAVE_ASSERT
 		assert_eq(sizeof(T), n);
+#endif
 		for (int i = 0; i < sizeof(T); ++i) {
 			s[i] = coder(this->stats[i]);
 			this->stats[i].inc(s[i]);

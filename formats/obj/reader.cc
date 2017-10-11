@@ -7,13 +7,17 @@
  * of the BSD 3-Clause license. See the LICENSE.txt file for details.
  */
 
+#include <stdexcept>
+#include <vector>
+#include <string>
+
 #include "reader.h"
 
-#include "../../structs/mixing.h"
-#include "../../structs/types.h"
-#include "../../structs/quant.h"
-#include "../../utils.h"
-#include "../../progress.h"
+#include "structs/mixing.h"
+#include "structs/types.h"
+#include "structs/quant.h"
+#include "utils/io.h"
+#include "utils/progress.h"
 
 namespace obj {
 namespace reader {

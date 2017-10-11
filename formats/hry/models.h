@@ -9,11 +9,12 @@
 
 #pragma once
 
-#include "../../cbm/base.h"
+#include <vector>
 
-#include "../../arith/coder.h"
-#include "../../arith/model.h"
-#include "../../arith/stat_adaptive.h"
+#include "arith/coder.h"
+#include "arith/model.h"
+#include "arith/stat_adaptive.h"
+#include "cbm/base.h"
 
 namespace hry {
 

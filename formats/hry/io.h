@@ -9,9 +9,9 @@
 
 #pragma once
 
-#include "../../structs/mixing.h"
 #include "models.h"
 #include "transform.h"
+#include "structs/mixing.h"
 
 namespace hry {
 namespace io {

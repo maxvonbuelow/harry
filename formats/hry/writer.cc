@@ -10,10 +10,10 @@
 #include "writer.h"
 
 #include "common.h"
-#include "../../cbm/encoder.h"
 #include "attrcode.h"
 #include "io.h"
-#include "../../progress.h"
+#include "cbm/encoder.h"
+#include "utils/progress.h"
 
 namespace hry {
 namespace writer {

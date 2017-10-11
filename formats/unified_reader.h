@@ -13,7 +13,8 @@
 #include <algorithm>
 #include <istream>
 #include <fstream>
-#include <endian.h>
+
+#include "utils/endian.h"
 
 #ifdef WITH_HRY
 #include "hry/reader.h"

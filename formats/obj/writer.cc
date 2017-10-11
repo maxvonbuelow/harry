@@ -7,10 +7,12 @@
  * of the BSD 3-Clause license. See the LICENSE.txt file for details.
  */
 
+#include <vector>
+
 #include "writer.h"
 
-#include "../../structs/mixing.h"
-#include "../../structs/types.h"
+#include "structs/mixing.h"
+#include "structs/types.h"
 
 namespace obj {
 namespace writer {

@@ -9,8 +9,6 @@
 
 #pragma once
 
-#include "../assert.h"
-
 #include "types.h"
 #include "faces.h"
 #include "attr.h"
@@ -85,7 +83,9 @@ struct Builder {
 	{
 		mesh.attrs.face_regs.resize(mesh.attrs.face_regs.size() + size);
 		mesh.attrs.bindings_face_attr.resize(mesh.attrs.bindings_face_attr.size() + size * mesh.attrs.num_bindings_face);
+#ifdef HAVE_ASSERT
 		assert(size_edges != 0 || mesh.attrs.num_bindings_corner == 0); // (size_edges == 0) implicates (mesh.attrs.num_bindings_corner == 0)
+#endif
 		mesh.attrs.bindings_corner_attr.resize(mesh.attrs.bindings_corner_attr.size() + size_edges * mesh.attrs.num_bindings_corner);
 		return mesh.attrs.face_regs.size() - 1;
 	}

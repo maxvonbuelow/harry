@@ -9,8 +9,9 @@
 
 #pragma once
 
-#include "../../structs/mesh.h"
 #include <istream>
+
+#include "structs/mesh.h"
 
 namespace hry {
 namespace reader {

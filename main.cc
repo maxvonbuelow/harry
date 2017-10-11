@@ -8,14 +8,17 @@
  */
 
 #include <iostream>
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <chrono>
+#include <cstdlib>
 
-#include "../structs/mesh.h"
-#include "../structs/quant.h"
-#include "../formats/unified_reader.h"
-#include "../formats/unified_writer.h"
-
-#include "assert.h"
-#include "args.h"
+#include "formats/unified_reader.h"
+#include "formats/unified_writer.h"
+#include "structs/mesh.h"
+#include "structs/quant.h"
+#include "utils/args.h"
 
 struct Args {
 	struct Quant {
@@ -89,8 +92,6 @@ void convert_quant(const mesh::attr::Attrs &attrs, const std::vector<Args::Quant
 
 int main(int argc, char **argv)
 {
-	AssertMngr::set([] { std::exit(EXIT_FAILURE); });
-
 	Args args(argc, argv);
 
 	mesh::Mesh mesh;
@@ -115,4 +116,6 @@ int main(int argc, char **argv)
 	std::chrono::high_resolution_clock::time_point t3 = std::chrono::high_resolution_clock::now();
 	std::cout << "Writing output took " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count() << " ms." << std::endl;
 	std::cout << "Total compression time: " << std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t0).count() << " ms" << std::endl;
+
+	return EXIT_SUCCESS;
 }

@@ -23,8 +23,6 @@
 
 #include "base.h"
 
-#include "../assert.h"
-
 namespace cbm {
 
 template <typename T, typename V>
@@ -108,7 +106,9 @@ struct CutBorder {
 	}
 	bool on_cut_border(V i)
 	{
+#ifdef HAVE_ASSERT
 		assert_ge(vertices[i], 0);
+#endif
 		return vertices[i] != 0;
 	}
 
@@ -141,7 +141,9 @@ struct CutBorder {
 			if (std::prev(l.base()) == r || l.base() == r) {
 				++p;
 				++part;
+#ifdef HAVE_ASSERT
 				assert(part != parts.rend());
+#endif
 				r = part->begin();
 				l = part->rbegin();
 				i = 0;
@@ -216,7 +218,9 @@ struct CutBorder {
 	{
 		Part &part = cur_part();
 		if (part.num_edges() == 1) {
+#ifdef HAVE_ASSERT
 			assert_eq(part.size(), 2);
+#endif
 			typename Elements::iterator it = part.begin();
 			deactivate_vertex((it++)->idx);
 			deactivate_vertex((it++)->idx);
@@ -300,12 +304,16 @@ struct CutBorder {
 	{
 		if (!on_cut_border(v.idx)) return false;
 		typename Elements::iterator it = find_element(v, i, p);
+#ifdef HAVE_ASSERT
 		assert_eq(get_element(i, p)->idx, v.idx);
+#endif
 
 		if (p > 0) {
 			op = UNION;
 			Data res = cutBorderUnion(it, p);
+#ifdef HAVE_ASSERT
 			assert_eq(res.idx, v.idx);
+#endif
 		} else {
 			Part &part = cur_part();
 			if (part.isEdgeBegin && (++part.begin())->idx == v.idx) {
@@ -315,7 +323,9 @@ struct CutBorder {
 			} else {
 				op = SPLIT;
 				Data res = splitCutBorder(it);
+#ifdef HAVE_ASSERT
 				assert_eq(res.idx, v.idx);
+#endif
 			}
 		}
 		return true;

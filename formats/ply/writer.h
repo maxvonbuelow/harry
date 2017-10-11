@@ -10,7 +10,7 @@
 #pragma once
 
 #include <ostream>
-#include "../../structs/mesh.h"
+#include "structs/mesh.h"
 
 namespace ply {
 namespace writer {

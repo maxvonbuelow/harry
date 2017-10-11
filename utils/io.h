@@ -9,12 +9,8 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <string>
-#include <fstream>
-
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <istream>
 
 namespace util {
 
