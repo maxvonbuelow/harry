@@ -121,7 +121,7 @@ struct CutBorder {
 		else
 			return std::prev(part.end(), -i + 1);
 	}
-	void find_element(Data v, int &i, int &p)
+	typename Elements::iterator find_element(Data v, int &i, int &p)
 	{
 		// search vertex in both directions
 		typename Parts::reverse_iterator part = parts.rbegin();
@@ -132,10 +132,10 @@ struct CutBorder {
 		while (1) {
 			if (r->idx == v.idx) {
 				++i;
-				return;
+				return r;
 			} else if (l->idx == v.idx) {
 				i = -i;
-				return;
+				return std::prev(l.base());
 			}
 
 			if (std::prev(l.base()) == r || l.base() == r) {
@@ -243,10 +243,9 @@ struct CutBorder {
 		return BORDER;
 	}
 
-	Data splitCutBorder(int i)
+	Data splitCutBorder(typename Elements::iterator it)
 	{
 		Part &part = cur_part();
-		typename Elements::iterator it = get_element(i);
 		Data gate = part.back();
 		deactivate_vertex(gate.idx);
 		part.pop_back();
@@ -263,10 +262,14 @@ struct CutBorder {
 
 		return *it;
 	}
-	Data cutBorderUnion(int i, int p)
+	Data splitCutBorder(int i)
+	{
+		return splitCutBorder(get_element(i));
+	}
+
+	Data cutBorderUnion(typename Elements::iterator it, int p)
 	{
 		Part &part = cur_part();
-		typename Elements::iterator it = get_element(i, p);
 		Data gate = part.back();
 		deactivate_vertex(gate.idx);
 		part.pop_back();
@@ -288,16 +291,20 @@ struct CutBorder {
 
 		return *it;
 	}
+	Data cutBorderUnion(int i, int p)
+	{
+		return cutBorderUnion(get_element(i, p), p);
+	}
 
 	bool findAndUpdate(Data v, int &i, int &p, OP &op)
 	{
 		if (!on_cut_border(v.idx)) return false;
-		find_element(v, i, p);
+		typename Elements::iterator it = find_element(v, i, p);
 		assert_eq(get_element(i, p)->idx, v.idx);
 
 		if (p > 0) {
 			op = UNION;
-			Data res = cutBorderUnion(i, p);
+			Data res = cutBorderUnion(it, p);
 			assert_eq(res.idx, v.idx);
 		} else {
 			Part &part = cur_part();
@@ -307,7 +314,7 @@ struct CutBorder {
 				connectBackward(op);
 			} else {
 				op = SPLIT;
-				Data res = splitCutBorder(i);
+				Data res = splitCutBorder(it);
 				assert_eq(res.idx, v.idx);
 			}
 		}
