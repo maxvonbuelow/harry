@@ -60,7 +60,7 @@ eol = sp? '\r'? '\n';
 
 line = ("usemtl" sp an eol) |
        ("mtllib" sp an eol) |
-       ("v" sp coord >initcoord sp coord sp coord (sp coord)? eol %{ ++vi[VERTEX]; vertex(coords, ncoord); }) |
+       ("v" (sp coord){3,4} >initcoord (sp coord){3,4}? eol %{ ++vi[VERTEX]; vertex(coords, ncoord); }) |
        ("vt" sp coord >initcoord sp coord (sp coord)? eol %{ ++vi[TEX]; tex(coords, ncoord); }) |
        ("vn" sp coord >initcoord sp coord sp coord eol %{ ++vi[NORMAL]; normal(coords, ncoord); }) |
        ("f" sp ${ fi[0].clear(); fi[1].clear(); fi[2].clear(); } (idxset sp)* idxset sp idxset eol %{ face(!fi[VERTEX].empty(), fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }) |
@@ -98,25 +98,25 @@ inline int objidx(int n, int size)
 
 static const int lut_interp[] = { mixing::POS, mixing::TEX, mixing::NORMAL };
 
-#define IL 5 /*std::numeric_limits<mesh::listidx_t>::max()*/
+#define IL 9 /*std::numeric_limits<mesh::listidx_t>::max()*/
 #define IR std::numeric_limits<mesh::regidx_t>::max()
 
 struct OBJReader {
 	mesh::Builder &builder;
-	mesh::listidx_t attr_lists[3][5]; // VERTEX, TEX, NORMAL
-	mesh::regidx_t vtx_reg[5];
-	mesh::regidx_t face_reg[64];
+	mesh::listidx_t attr_lists[3][9]; // VERTEX, TEX, NORMAL
+	mesh::regidx_t vtx_reg[9];
+	mesh::regidx_t face_reg[256];
 	std::vector<std::pair<mesh::listidx_t, mesh::attridx_t>> tex_loc, normal_loc;
 	std::vector<std::string> mtllibs;
 
 	OBJReader(mesh::Builder &_builder) : builder(_builder),
-		attr_lists{ { IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL } },
-		vtx_reg{ IR, IR, IR, IR, IR },
-		face_reg{ IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR,
-		          IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR,
-		          IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR,
-		          IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR, IR }
-	{}
+		attr_lists{ { IL, IL, IL, IL, IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL, IL, IL, IL, IL } },
+		vtx_reg{ IR, IR, IR, IR, IR, IR, IR, IR, IR }
+	{
+		for (int i = 0; i < 256; ++i) {
+			face_reg[i] = IR;
+		}
+	}
 
 	// helper methods
 	int init_attr(Attrs attr, int n)
@@ -127,7 +127,10 @@ struct OBJReader {
 			mixing::Interps interps;
 			for (int i = 0; i < n; ++i) {
 				fmt.add(REALMT);
-				interps.append(lut_interp[attr], i);
+				int interp = lut_interp[attr];
+				if (attr == VERTEX && n > 4)
+					interp = n == 8 && i >= 4 || i >= 3 ? mixing::COLOR : interp;
+				interps.append(interp, i);
 			}
 			list = builder.add_list(fmt, interps, attr == VERTEX ? mesh::attr::VTX : mesh::attr::CORNER);
 		}
@@ -215,7 +218,7 @@ struct OBJReader {
 		double fraction, denom, sign, val, exp, expmul;
 		int idx, idx_sign;
 		std::vector<int> fi[3];
-		real coords[4];
+		real coords[8];
 		int ncoord;
 		int vi[3] = { 0 };
 		int line = 0;

@@ -51,6 +51,11 @@ void write(std::ostream &os, const std::string &dir, mesh::Mesh &mesh)
 					os << " ";
 					e.print(os, in.off(mixing::POS) + k);
 				}
+				for (int k = 0; k < in.len(mixing::COLOR); ++k) {
+					if (cnt++ >= 8) break;
+					os << " ";
+					e.print(os, in.off(mixing::COLOR) + k);
+				}
 				break;
 			}
 		}
