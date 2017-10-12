@@ -786,7 +786,7 @@ inline int objidx(int n, int size)
 
 static const int lut_interp[] = { mixing::POS, mixing::TEX, mixing::NORMAL };
 
-#define IL 9 /*std::numeric_limits<mesh::listidx_t>::max()*/
+#define IL 9
 #define IR std::numeric_limits<mesh::regidx_t>::max()
 
 struct OBJReader {
@@ -816,9 +816,8 @@ struct OBJReader {
 			for (int i = 0; i < n; ++i) {
 				fmt.add(REALMT);
 				int interp = lut_interp[attr];
-				if (attr == VERTEX && n > 4) {
+				if (attr == VERTEX && n > 4)
 					interp = n == 8 && i >= 4 || i >= 3 ? mixing::COLOR : interp;
-				}
 				interps.append(interp, i);
 			}
 			list = builder.add_list(fmt, interps, attr == VERTEX ? mesh::attr::VTX : mesh::attr::CORNER);
@@ -916,12 +915,12 @@ struct OBJReader {
 		int cs;
 
 		
-#line 920 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 919 "/home/max/repos/harry/formats/obj/reader.cc"
 	{
 	cs = ObjParser_start;
 	}
 
-#line 231 "formats/obj/reader.rl"
+#line 230 "formats/obj/reader.rl"
 
 		while (!is.eof()) {
 			char *p = buf;
@@ -930,7 +929,7 @@ struct OBJReader {
 			char *eof = is.eof() ? pe : nullptr;
 
 			
-#line 934 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 933 "/home/max/repos/harry/formats/obj/reader.cc"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -1103,7 +1102,7 @@ _match:
 #line 73 "formats/obj/reader.rl"
 	{ prog(line++); }
 	break;
-#line 1107 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 1106 "/home/max/repos/harry/formats/obj/reader.cc"
 		}
 	}
 
@@ -1135,7 +1134,7 @@ _again:
 #line 66 "formats/obj/reader.rl"
 	{ face(!fi[VERTEX].empty(), fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }
 	break;
-#line 1139 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 1138 "/home/max/repos/harry/formats/obj/reader.cc"
 		}
 	}
 	}
@@ -1143,7 +1142,7 @@ _again:
 	_out: {}
 	}
 
-#line 239 "formats/obj/reader.rl"
+#line 238 "formats/obj/reader.rl"
 
 			if (cs == ObjParser_error) throw std::runtime_error("Unable to parse this OBJ file");
 		}

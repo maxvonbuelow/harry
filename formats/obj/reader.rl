@@ -98,7 +98,7 @@ inline int objidx(int n, int size)
 
 static const int lut_interp[] = { mixing::POS, mixing::TEX, mixing::NORMAL };
 
-#define IL 9 /*std::numeric_limits<mesh::listidx_t>::max()*/
+#define IL 9
 #define IR std::numeric_limits<mesh::regidx_t>::max()
 
 struct OBJReader {

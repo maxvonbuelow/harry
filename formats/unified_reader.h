@@ -75,10 +75,14 @@ void read(std::istream &is, const std::string &fn, mesh::Mesh &mesh)
 		throw std::runtime_error("Currently unimplemented");
 	}
 }
-void read(const std::string &fn, mesh::Mesh &mesh)
+std::size_t read(const std::string &fn, mesh::Mesh &mesh)
 {
 	std::ifstream is(fn, std::ifstream::binary);
+	is.seekg(0, std::ios::end);
+	std::size_t size = is.tellg();
+	is.seekg(0, std::ios::beg);
 	read(is, fn, mesh);
+	return size;
 }
 
 }

@@ -68,10 +68,12 @@ void write(std::ostream &os, const std::string &fn, mesh::Mesh &mesh, FileType t
 		throw std::runtime_error("Currently unimplemented");
 	}
 }
-void write(const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN, bool ply_ascii = false)
+std::size_t write(const std::string &fn, mesh::Mesh &mesh, FileType type = UNKNOWN, bool ply_ascii = false)
 {
 	std::ofstream os(fn, std::ofstream::binary);
 	write(os, fn, mesh, type, ply_ascii);
+	os.flush();
+	return os.tellp();
 }
 
 }
