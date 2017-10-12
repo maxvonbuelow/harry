@@ -68,6 +68,7 @@ line = ("usemtl" sp an eol) |
        ("s" sp an eol) | # smooth
        ("g" sp an eol) | # group
        ("l" sp an eol) | # line
+       ("p" sp an eol) | # point
        ("#" an eol) |
        ('' eol);
 
