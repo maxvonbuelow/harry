@@ -862,9 +862,8 @@ struct OBJReader {
 		mesh::attridx_t aidx = write_attr(list, coords, n);
 		normal_loc.push_back(std::make_pair(list, aidx));
 	}
-	void face(bool has_v, int *vi, bool has_t, int *ti, bool has_n, int *ni, int corners)
+	void face(int *vi, bool has_t, int *ti, bool has_n, int *ni, int corners)
 	{
-		if (!has_v) throw std::runtime_error("Face has no vertex index; required for connectivity");
 		mesh::listidx_t tex_l = IL, normal_l = IL;
 
 		if (has_t) tex_l = tex_loc[ti[0]].first;
@@ -916,12 +915,12 @@ struct OBJReader {
 		int cs;
 
 		
-#line 920 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 919 "/home/max/repos/harry/formats/obj/reader.cc"
 	{
 	cs = ObjParser_start;
 	}
 
-#line 232 "formats/obj/reader.rl"
+#line 231 "formats/obj/reader.rl"
 
 		while (!is.eof()) {
 			char *p = buf;
@@ -930,7 +929,7 @@ struct OBJReader {
 			char *eof = is.eof() ? pe : nullptr;
 
 			
-#line 934 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 933 "/home/max/repos/harry/formats/obj/reader.cc"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -1097,13 +1096,13 @@ _match:
 	break;
 	case 23:
 #line 66 "formats/obj/reader.rl"
-	{ face(!fi[VERTEX].empty(), fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }
+	{ face(fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }
 	break;
 	case 24:
 #line 75 "formats/obj/reader.rl"
 	{ prog(line++); }
 	break;
-#line 1107 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 1106 "/home/max/repos/harry/formats/obj/reader.cc"
 		}
 	}
 
@@ -1133,9 +1132,9 @@ _again:
 	break;
 	case 23:
 #line 66 "formats/obj/reader.rl"
-	{ face(!fi[VERTEX].empty(), fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }
+	{ face(fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }
 	break;
-#line 1139 "/home/max/repos/harry/formats/obj/reader.cc"
+#line 1138 "/home/max/repos/harry/formats/obj/reader.cc"
 		}
 	}
 	}
@@ -1143,7 +1142,7 @@ _again:
 	_out: {}
 	}
 
-#line 240 "formats/obj/reader.rl"
+#line 239 "formats/obj/reader.rl"
 
 			if (cs == ObjParser_error) throw std::runtime_error("Unable to parse this OBJ file");
 		}

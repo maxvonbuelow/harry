@@ -63,7 +63,7 @@ line = ("usemtl" sp an eol) |
        ("v" (sp coord){3,4} >initcoord (sp coord){3,4}? eol %{ ++vi[VERTEX]; vertex(coords, ncoord); }) |
        ("vt" sp coord >initcoord sp coord (sp coord)? eol %{ ++vi[TEX]; tex(coords, ncoord); }) |
        ("vn" sp coord >initcoord sp coord sp coord eol %{ ++vi[NORMAL]; normal(coords, ncoord); }) |
-       ("f" sp ${ fi[0].clear(); fi[1].clear(); fi[2].clear(); } (idxset sp)* idxset sp idxset eol %{ face(!fi[VERTEX].empty(), fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }) |
+       ("f" sp ${ fi[0].clear(); fi[1].clear(); fi[2].clear(); } (idxset sp)* idxset sp idxset eol %{ face(fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }) |
        ("o" sp an eol) | # object
        ("s" sp an eol) | # smooth
        ("g" sp an eol) | # group
@@ -175,9 +175,8 @@ struct OBJReader {
 		mesh::attridx_t aidx = write_attr(list, coords, n);
 		normal_loc.push_back(std::make_pair(list, aidx));
 	}
-	void face(bool has_v, int *vi, bool has_t, int *ti, bool has_n, int *ni, int corners)
+	void face(int *vi, bool has_t, int *ti, bool has_n, int *ni, int corners)
 	{
-		if (!has_v) throw std::runtime_error("Face has no vertex index; required for connectivity");
 		mesh::listidx_t tex_l = IL, normal_l = IL;
 
 		if (has_t) tex_l = tex_loc[ti[0]].first;
