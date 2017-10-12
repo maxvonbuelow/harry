@@ -25,7 +25,7 @@
 #define BUFSIZE 16384
 
 
-#line 74 "formats/obj/reader.rl"
+#line 75 "formats/obj/reader.rl"
 
 
 namespace obj {
@@ -88,7 +88,7 @@ static const short _ObjParser_key_offsets[] = {
 	1015, 1017, 1021, 1023, 1025, 1027, 1029, 1031, 
 	1033, 1035, 1037, 1038, 1046, 1048, 1055, 1062, 
 	1064, 1070, 1076, 1078, 1083, 1088, 1090, 1094, 
-	1106, 1118, 1130, 1142
+	1107, 1120, 1133, 1146
 };
 
 static const char _ObjParser_trans_keys[] = {
@@ -229,14 +229,14 @@ static const char _ObjParser_trans_keys[] = {
 	45, 47, 48, 57, 48, 57, 9, 32, 
 	47, 48, 57, 9, 32, 45, 48, 57, 
 	48, 57, 9, 32, 48, 57, 9, 10, 
-	13, 32, 35, 102, 103, 109, 111, 115, 
+	13, 32, 35, 102, 103, 108, 109, 111, 
+	115, 117, 118, 9, 10, 13, 32, 35, 
+	102, 103, 108, 109, 111, 115, 117, 118, 
+	9, 10, 13, 32, 35, 102, 103, 108, 
+	109, 111, 115, 117, 118, 9, 10, 13, 
+	32, 35, 102, 103, 108, 109, 111, 115, 
 	117, 118, 9, 10, 13, 32, 35, 102, 
-	103, 109, 111, 115, 117, 118, 9, 10, 
-	13, 32, 35, 102, 103, 109, 111, 115, 
-	117, 118, 9, 10, 13, 32, 35, 102, 
-	103, 109, 111, 115, 117, 118, 9, 10, 
-	13, 32, 35, 102, 103, 109, 111, 115, 
-	117, 118, 0
+	103, 108, 109, 111, 115, 117, 118, 0
 };
 
 static const char _ObjParser_single_lengths[] = {
@@ -278,8 +278,8 @@ static const char _ObjParser_single_lengths[] = {
 	2, 2, 4, 2, 0, 2, 5, 2, 
 	2, 4, 2, 2, 2, 2, 2, 2, 
 	2, 2, 1, 6, 0, 5, 5, 0, 
-	4, 4, 0, 3, 3, 0, 2, 12, 
-	12, 12, 12, 12
+	4, 4, 0, 3, 3, 0, 2, 13, 
+	13, 13, 13, 13
 };
 
 static const char _ObjParser_range_lengths[] = {
@@ -365,7 +365,7 @@ static const short _ObjParser_index_offsets[] = {
 	1197, 1200, 1205, 1208, 1211, 1214, 1217, 1220, 
 	1223, 1226, 1229, 1231, 1239, 1241, 1248, 1255, 
 	1257, 1263, 1269, 1271, 1276, 1281, 1283, 1287, 
-	1300, 1313, 1326, 1339
+	1301, 1315, 1329, 1343
 };
 
 static const short _ObjParser_trans_targs[] = {
@@ -530,15 +530,15 @@ static const short _ObjParser_trans_targs[] = {
 	8, 306, 308, 307, 0, 307, 0, 8, 
 	8, 308, 307, 0, 8, 8, 309, 310, 
 	0, 310, 0, 8, 8, 310, 0, 1, 
-	311, 2, 1, 3, 4, 12, 13, 12, 
-	12, 18, 23, 0, 1, 311, 2, 1, 
-	3, 4, 12, 13, 12, 12, 18, 23, 
-	0, 1, 311, 2, 1, 3, 4, 12, 
-	13, 12, 12, 18, 23, 0, 1, 311, 
-	2, 1, 3, 4, 12, 13, 12, 12, 
+	311, 2, 1, 3, 4, 12, 12, 13, 
+	12, 12, 18, 23, 0, 1, 311, 2, 
+	1, 3, 4, 12, 12, 13, 12, 12, 
 	18, 23, 0, 1, 311, 2, 1, 3, 
-	4, 12, 13, 12, 12, 18, 23, 0, 
-	0
+	4, 12, 12, 13, 12, 12, 18, 23, 
+	0, 1, 311, 2, 1, 3, 4, 12, 
+	12, 13, 12, 12, 18, 23, 0, 1, 
+	311, 2, 1, 3, 4, 12, 12, 13, 
+	12, 12, 18, 23, 0, 0
 };
 
 static const char _ObjParser_trans_actions[] = {
@@ -704,14 +704,14 @@ static const char _ObjParser_trans_actions[] = {
 	78, 49, 9, 0, 0, 0, 40, 74, 
 	0, 43, 0, 52, 52, 9, 0, 23, 
 	23, 23, 23, 23, 23, 23, 23, 23, 
-	23, 23, 23, 0, 67, 67, 67, 67, 
+	23, 23, 23, 23, 0, 67, 67, 67, 
 	67, 67, 67, 67, 67, 67, 67, 67, 
-	0, 58, 58, 58, 58, 58, 58, 58, 
-	58, 58, 58, 58, 58, 0, 64, 64, 
-	64, 64, 64, 64, 64, 64, 64, 64, 
-	64, 64, 0, 61, 61, 61, 61, 61, 
-	61, 61, 61, 61, 61, 61, 61, 0, 
-	0
+	67, 67, 0, 58, 58, 58, 58, 58, 
+	58, 58, 58, 58, 58, 58, 58, 58, 
+	0, 64, 64, 64, 64, 64, 64, 64, 
+	64, 64, 64, 64, 64, 64, 0, 61, 
+	61, 61, 61, 61, 61, 61, 61, 61, 
+	61, 61, 61, 61, 0, 0
 };
 
 static const char _ObjParser_eof_actions[] = {
@@ -764,7 +764,7 @@ static const int ObjParser_error = 0;
 static const int ObjParser_en_main = 311;
 
 
-#line 80 "formats/obj/reader.rl"
+#line 81 "formats/obj/reader.rl"
 
 typedef float real;
 static const mixing::Type REALMT = mixing::FLOAT;
@@ -920,7 +920,7 @@ struct OBJReader {
 	cs = ObjParser_start;
 	}
 
-#line 230 "formats/obj/reader.rl"
+#line 231 "formats/obj/reader.rl"
 
 		while (!is.eof()) {
 			char *p = buf;
@@ -1099,7 +1099,7 @@ _match:
 	{ face(!fi[VERTEX].empty(), fi[VERTEX].data(), !fi[TEX].empty(), fi[TEX].data(), !fi[NORMAL].empty(), fi[NORMAL].data(), fi[VERTEX].size()); }
 	break;
 	case 24:
-#line 73 "formats/obj/reader.rl"
+#line 74 "formats/obj/reader.rl"
 	{ prog(line++); }
 	break;
 #line 1106 "/home/max/repos/harry/formats/obj/reader.cc"
@@ -1142,7 +1142,7 @@ _again:
 	_out: {}
 	}
 
-#line 238 "formats/obj/reader.rl"
+#line 239 "formats/obj/reader.rl"
 
 			if (cs == ObjParser_error) throw std::runtime_error("Unable to parse this OBJ file");
 		}
