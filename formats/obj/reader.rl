@@ -24,7 +24,7 @@
 
 %%{
 machine ObjParser;
-sp = ' '+;
+sp = (' ' | '\t')+;
 an = [^\r\n]*;
 
 action float_init { sign = 1; val = 0; fraction = 0; denom = 1; exp = 0; expmul = 1; }
@@ -38,7 +38,7 @@ action float_nan { val = NAN; }
 action float_inf { val = INFINITY * sign; }
 
 nan = [nN][aA][nN];
-inf = [iI][nN][fF][iI][nN][iI][tT][yY];
+inf = [iI][nN][fF]([iI][nN][iI][tT][yY])?;
 exp = ([eE][+\-][0-9]+ $float_exp %float_exp_fin);
 float = (
           [+\-]? >float_init $float_sign
