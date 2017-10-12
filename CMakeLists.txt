@@ -23,6 +23,7 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR})
 
 find_package(Threads REQUIRED)
+find_package(RAGEL)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w") # :)
 
@@ -30,7 +31,12 @@ set(FMTSRC "")
 foreach(f ${FMTS})
 	string(TOUPPER ${f} F)
 	add_definitions(-DWITH_${F})
-	LIST(APPEND FMTSRC "formats/${f}/reader.cc")
+	if(RAGEL_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/formats/${f}/reader.rl")
+		RAGEL_TARGET(${f}_reader formats/${f}/reader.rl "${CMAKE_SOURCE_DIR}/formats/${f}/reader.cc")
+		LIST(APPEND FMTSRC ${RAGEL_${f}_reader_OUTPUTS})
+	else()
+		LIST(APPEND FMTSRC "formats/${f}/reader.cc")
+	endif()
 	LIST(APPEND FMTSRC "formats/${f}/writer.cc")
 endforeach()
 
