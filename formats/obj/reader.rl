@@ -11,6 +11,8 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <fstream>
+#include <array>
 
 #include "reader.h"
 
@@ -58,8 +60,10 @@ action initcoord { ncoord = 0; }
 
 eol = sp? '\r'? '\n';
 
-line = ("usemtl" sp an eol) |
-       ("mtllib" sp an eol) |
+name = [^\r\n]+ >{ name.clear(); } ${ name += fc; };
+
+line = ("usemtl" sp name eol %{ usemtl(name); }) |
+       ("mtllib" sp name eol %{ mtllib(name); }) |
        ("v" (sp coord){3,4} >initcoord (sp coord){3,4}? eol %{ ++vi[VERTEX]; vertex(coords, ncoord); }) |
        ("vt" sp coord >initcoord sp coord (sp coord)? eol %{ ++vi[TEX]; tex(coords, ncoord); }) |
        ("vn" sp coord >initcoord sp coord sp coord eol %{ ++vi[NORMAL]; normal(coords, ncoord); }) |
@@ -107,16 +111,21 @@ struct OBJReader {
 	mesh::Builder &builder;
 	mesh::listidx_t attr_lists[3][9]; // VERTEX, TEX, NORMAL
 	mesh::regidx_t vtx_reg[9];
-	mesh::regidx_t face_reg[256];
+// 	mesh::regidx_t face_reg[256];
+	std::vector<std::array<mesh::regidx_t, 256>> face_regs;
 	std::vector<std::pair<mesh::listidx_t, mesh::attridx_t>> tex_loc, normal_loc;
-	std::vector<std::string> mtllibs;
+	std::string base;
+	std::unordered_map<std::string, int> mtls;
+	int cur_mtl;
 
 	OBJReader(mesh::Builder &_builder) : builder(_builder),
 		attr_lists{ { IL, IL, IL, IL, IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL, IL, IL, IL, IL }, { IL, IL, IL, IL, IL, IL, IL, IL, IL } },
 		vtx_reg{ IR, IR, IR, IR, IR, IR, IR, IR, IR }
 	{
+		cur_mtl = 0;
+		face_regs.emplace_back();
 		for (int i = 0; i < 256; ++i) {
-			face_reg[i] = IR;
+			face_regs[0][i] = IR;
 		}
 	}
 
@@ -149,6 +158,37 @@ struct OBJReader {
 	}
 
 	// OBJ methods
+	void usemtl(const std::string &name)
+	{
+		std::unordered_map<std::string, int>::iterator it = mtls.find(name);
+		if (it == mtls.end()) {
+			// Mtl does not exist. Use default mtl.
+			cur_mtl = 0;
+		} else {
+			cur_mtl = it->second;
+		}
+	}
+	void mtllib(const std::string &name)
+	{
+		std::ifstream is(util::join_path(base, name));
+		if (!is) return;
+		while (!is.eof()) {
+			// TODO: implement region attributes
+			std::string id;
+			is >> id;
+			if (id == "newmtl") {
+				std::string name;
+				is >> name;
+				mtls[name] = face_regs.size();
+				face_regs.emplace_back();
+				for (int i = 0; i < 256; ++i) {
+					face_regs.back()[i] = IR;
+				}
+			} else {
+				util::skip_line(is);
+			}
+		}
+	}
 	void vertex(real *coords, int n)
 	{
 		mesh::listidx_t list = init_attr(VERTEX, n);
@@ -188,11 +228,11 @@ struct OBJReader {
 		}
 
 		int reglookup = (tex_l << 3) | normal_l;
-		mesh::regidx_t r = face_reg[reglookup];
+		mesh::regidx_t r = face_regs[cur_mtl][reglookup];
 		mesh::listidx_t num_attrs = (mesh::listidx_t)has_t + (mesh::listidx_t)has_n;
 		mesh::listidx_t tex_a = 0, normal_a = (mesh::listidx_t)has_t;
 		if (r == IR) {
-			r = face_reg[reglookup] = builder.add_face_region(0, num_attrs);
+			r = face_regs[cur_mtl][reglookup] = builder.add_face_region(0, num_attrs);
 			if (has_t) builder.bind_reg_cornerlist(r, tex_a, tex_l);
 			if (has_n) builder.bind_reg_cornerlist(r, normal_a, normal_l);
 		}
@@ -212,6 +252,7 @@ struct OBJReader {
 	// reader
 	void read_obj(std::istream &is, const std::string &dir)
 	{
+		base = dir;
 		progress::handle prog;
 		prog.start(util::linenum_approx(is));
 		builder.init_bindings(0, 1, 2);
@@ -223,6 +264,7 @@ struct OBJReader {
 		int ncoord;
 		int vi[3] = { 0 };
 		int line = 0;
+		std::string name;
 
 		char buf[BUFSIZE];
 		int cs;
