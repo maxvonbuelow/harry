@@ -68,9 +68,9 @@ private:
 	};
 	enum Reason { E_CNT_LT, E_CNT_GT, E_INVALID, E_INVALID_LOPT, E_CAST, E_ENUM };
 	int argc;
-	char **argv;
+	const char **argv;
 	int cur;
-	char *curopt;
+	const char *curopt;
 	int nonopt_cur;
 	int nonopt_min, nonopt_max;
 	int opts[256];
@@ -85,24 +85,24 @@ private:
 	std::ostream &os;
 
 public:
-	parser(int _argc, char **_argv, const std::string &_description = "", std::ostream &_os = std::cout) : argc(_argc), argv(_argv), cur(1), id(0), curopt(argv[cur]), nonopt_cur(0), maxw(0), description(_description), val_read(true), os(_os)
+	inline parser(int _argc, const char **_argv, const std::string &_description = "", std::ostream &_os = std::cout) : argc(_argc), argv(_argv), cur(1), id(0), curopt(argv[cur]), nonopt_cur(0), maxw(0), description(_description), val_read(true), os(_os)
 	{
 		for (int i = 0; i < 256; ++i) opts[i] = invalid;
 		range(0);
 		optid_help = add_opt('h', "help", "Print this dialogue.");
 	}
 
-	void range(int min, int max) // for non-optionals
+	inline void range(int min, int max) // for non-optionals
 	{
 		nonopt_min = min;
 		nonopt_max = max;
 	}
-	void range(int min)
+	inline void range(int min)
 	{
 		range(min, std::numeric_limits<int>::max());
 	}
 
-	int add_opt(char opt, const std::string &lopt, const std::string &descr)
+	inline int add_opt(char opt, const std::string &lopt, const std::string &descr)
 	{
 		opts[opt] = id;
 		lopts[lopt] = id;
@@ -110,18 +110,18 @@ public:
 		maxw = std::max(maxw, (int)lopt.size());
 		return id++;
 	}
-	int add_opt(const std::string &lopt, const std::string &descr)
+	inline int add_opt(const std::string &lopt, const std::string &descr)
 	{
 		return add_opt('\0', lopt, descr);
 	}
-	int add_nonopt(const std::string &name)
+	inline int add_nonopt(const std::string &name)
 	{
 		nonoptinfo.push_back(name);
 		nonopts.push_back(id);
 		return id++;
 	}
 
-	void show_usage()
+	inline void show_usage()
 	{
 		if (!description.empty()) os << description << std::endl << std::endl;
 		os << "Usage: " << argv[0] << " [OPTIONS]";
@@ -141,19 +141,19 @@ public:
 		}
 	}
 
-	Type nexttype()
+	inline Type nexttype()
 	{
 		return *curopt == '-' && curopt[1] && curopt[1] != '-' ? OPT :
 		       *curopt == '-' && curopt[1] == '-' && curopt[2] ? LOPT :
 		       VAL;
 	}
 
-	bool has_val()
+	inline bool has_val()
 	{
 		return nexttype() == VAL;
 	}
 
-	int next()
+	inline int next()
 	{
 		if (cur >= argc) {
 			if (nonopt_cur < nonopt_min) err(E_CNT_LT);
@@ -203,7 +203,7 @@ public:
 		T v;
 		try {
 			if (!curopt) err(E_CNT_LT);
-			else v = Conv<T, char*>()(curopt);
+			else v = Conv<T, const char*>()(curopt);
 		} catch (...) {
 			err(E_CAST);
 			return T();
@@ -233,7 +233,7 @@ private:
 		else return std::move(_map<C, T...>(std::move(val), std::move(args)...));
 	}
 
-	void err(Reason reason)
+	inline void err(Reason reason)
 	{
 		show_usage();
 		os << std::endl;
@@ -260,7 +260,7 @@ private:
 		std::exit(EXIT_FAILURE);
 	}
 
-	void inc()
+	inline void inc()
 	{
 		++cur;
 		curopt = argv[cur];

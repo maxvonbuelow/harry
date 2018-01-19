@@ -30,7 +30,7 @@ struct Args {
 	bool clearquant;
 	bool ply_ascii;
 
-	Args(int argc, char **argv) : fmt(unified::writer::UNKNOWN), ply_ascii(false), quant(false), clearquant(false)
+	Args(int argc, const char **argv) : fmt(unified::writer::UNKNOWN), ply_ascii(false), quant(false), clearquant(false)
 	{
 		using namespace std::string_literals;
 		args::parser args(argc, argv, "Harry mesh compressor");
@@ -90,7 +90,7 @@ void convert_quant(const mesh::attr::Attrs &attrs, const std::vector<Args::Quant
 	}
 }
 
-int main(int argc, char **argv)
+int main(int argc, const char **argv)
 {
 	Args args(argc, argv);
 
