@@ -36,7 +36,7 @@ Note that file formats and decoders with version 0.x are incompatible to each ot
 
 License & Reference
 ------
-Our program is licensed under the liberal BSD 3-Clause license included as LICENSE.txt file.
+Our program is licensed under the liberal BSD 3-Clause license included as LICENSE.md file.
 
 If you decide to use our code or code based on this project in your application, please make sure to cite our VMV 2017 paper:
 

@@ -826,7 +826,6 @@ struct OBJReader {
 	mesh::Builder &builder;
 	mesh::listidx_t attr_lists[3][9]; // VERTEX, TEX, NORMAL
 	mesh::regidx_t vtx_reg[9];
-// 	mesh::regidx_t face_reg[256];
 	std::vector<std::array<mesh::regidx_t, 256>> face_regs;
 	std::vector<std::pair<mesh::listidx_t, mesh::attridx_t>> tex_loc, normal_loc;
 	std::string base;
@@ -888,6 +887,7 @@ struct OBJReader {
 		std::ifstream is(util::join_path(base, name));
 		if (!is) return;
 		while (!is.eof()) {
+			// TODO: implement region attributes
 			std::string id;
 			is >> id;
 			if (id == "newmtl") {
