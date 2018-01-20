@@ -46,7 +46,7 @@ namespace args {
 // Don't use type_traits for c++11 support
 template <typename T, typename U>
 struct Conv { T operator()(U txt) { return U(txt); } };
-#define FN_CONV(TYPE, CONV) template <typename U> struct Conv<TYPE, U> { TYPE operator()(U txt) { return CONV(txt); } };
+#define FN_CONV(TYPE, CONV) template <typename U> struct Conv<TYPE, U> { TYPE operator()(U txt) { return CONV(txt); } }
 FN_CONV(float, std::atof); FN_CONV(double, std::atof);
 FN_CONV(int8_t, std::atoi); FN_CONV(uint8_t, std::atoi);
 FN_CONV(int16_t, std::atoi); FN_CONV(uint16_t, std::atoi);
@@ -62,7 +62,7 @@ struct parser {
 	enum Type { OPT, LOPT, VAL };
 private:
 	struct Opt {
-		char opt;
+		unsigned char opt;
 		std::string lopt;
 		std::string descr;
 	};
@@ -71,8 +71,8 @@ private:
 	const char **argv;
 	int cur;
 	const char *curopt;
-	int nonopt_cur;
-	int nonopt_min, nonopt_max;
+	std::size_t nonopt_cur;
+	std::size_t nonopt_min, nonopt_max;
 	int opts[256];
 	std::vector<int> nonopts;
 	int id;
@@ -85,24 +85,24 @@ private:
 	std::ostream &os;
 
 public:
-	inline parser(int _argc, const char **_argv, const std::string &_description = "", std::ostream &_os = std::cout) : argc(_argc), argv(_argv), cur(1), id(0), curopt(argv[cur]), nonopt_cur(0), maxw(0), description(_description), val_read(true), os(_os)
+	inline parser(int _argc, const char **_argv, const std::string &_description = "", std::ostream &_os = std::cout) : description(_description), argc(_argc), argv(_argv), cur(1), curopt(argv[cur]), nonopt_cur(0), id(0), maxw(0),  val_read(true), os(_os)
 	{
 		for (int i = 0; i < 256; ++i) opts[i] = invalid;
 		range(0);
 		optid_help = add_opt('h', "help", "Print this dialogue.");
 	}
 
-	inline void range(int min, int max) // for non-optionals
+	inline void range(std::size_t min, std::size_t max) // for non-optionals
 	{
 		nonopt_min = min;
 		nonopt_max = max;
 	}
-	inline void range(int min)
+	inline void range(std::size_t min)
 	{
 		range(min, std::numeric_limits<int>::max());
 	}
 
-	inline int add_opt(char opt, const std::string &lopt, const std::string &descr)
+	inline int add_opt(unsigned char opt, const std::string &lopt, const std::string &descr)
 	{
 		opts[opt] = id;
 		lopts[lopt] = id;
@@ -125,7 +125,7 @@ public:
 	{
 		if (!description.empty()) os << description << std::endl << std::endl;
 		os << "Usage: " << argv[0] << " [OPTIONS]";
-		for (int i = 0; i < nonoptinfo.size(); ++i) {
+		for (auto i = 0u; i < nonoptinfo.size(); ++i) {
 			if (i >= nonopt_min)
 				os << " [" << nonoptinfo[i] << "]";
 			else
@@ -173,14 +173,14 @@ public:
 			if (!*curopt) inc();
 		} else if (type == OPT) {
 			++curopt;
-			i = opts[*curopt];
+			i = opts[static_cast<unsigned char>(*curopt)];
 			if (i == invalid) err(E_INVALID);
 			++curopt;
 			val_read = false;
 			if (!*curopt) inc();
 		} else if (!val_read) {
 			// last value was not read: assume boolean -> no need for additional dash
-			i = opts[*curopt];
+			i = opts[static_cast<unsigned char>(*curopt)];
 			if (i == invalid) err(E_INVALID);
 			++curopt;
 			if (!*curopt) inc();
@@ -233,6 +233,7 @@ private:
 		else return std::move(_map<C, T...>(std::move(val), std::move(args)...));
 	}
 
+	[[noreturn]]
 	inline void err(Reason reason)
 	{
 		show_usage();
