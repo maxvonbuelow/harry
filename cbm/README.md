@@ -12,7 +12,7 @@ struct EncoderMesh {
 	V num_vtx(); // Returns the number of vertices of the mesh.
 	Edge choose_tri(); // Returns the first edge of an arbitrary triangle. The triangle must internally be marked and should not be returned a second time by choose_tri or choose_twin.
 	Edge choose_twin(Edge i, bool &success); // Returns the opposite edge and mark the opposite triangle. success becomes false if the edge is on a border or the opposite face was already processed.
-	bool empty(); // Returns true if there are triangles left.
+	bool empty(); // Returns true if there are no triangles left.
 	V org(Edge e); // Returns the originating vertex index of the edge.
 	Edge next(Edge e); // Returns the next half edge.
 	Edge twin(Edge e); // Returns the opposite half edge.
