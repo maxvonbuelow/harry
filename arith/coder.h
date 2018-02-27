@@ -7,7 +7,7 @@
  */
 
 /*
- * Implementation of a Arithmetic Coder.
+ * Implementation of an Arithmetic Coder.
  *
  * Related publications:
  * Moffat, Alistair, Radford M. Neal, and Ian H. Witten. "Arithmetic coding revisited." ACM Transactions on Information Systems (TOIS) 16.3 (1998): 256-294.
