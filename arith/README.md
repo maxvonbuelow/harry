@@ -1,7 +1,7 @@
 Arithmetic Coder
 ======
 
-This is a implementation of a Arithmetic Coder, which is based on the description of Moffat et. al. [1998].
+This is an implementation of a Arithmetic Coder, which is based on the description of Moffat et. al. [1998].
 
 Usage Example
 ------
