@@ -3,7 +3,7 @@ Harry Mesh Compressor
 
 Implementation of a compression algorithm, which is lossless in terms of attributes and connectivity with optional quantization for attributes.
 
-The Harry mesh compression algorithm has been presented and accepted at *Vision, Modelling and Visualization 2017* in Bonn, Germany. For a reprint and further information, please refer to our [project page](http://www.gcc.tu-darmstadt.de/home/proj/meshcomp).
+The Harry mesh compression algorithm has been presented and accepted at *Vision, Modelling and Visualization 2017* in Bonn, Germany. For a reprint and further information, please refer to our [project page](https://www.gcc.tu-darmstadt.de/home/proj/meshcomp).
 
 This repository also includes independent software that can be used in other projects:
 * An (unofficial) reference implementation of the Cut-Border Machine (/cbm/) [Gumhold and Strasser, 1998]
