@@ -10,8 +10,8 @@
  * Implementation of the Fenwick Tree.
  *
  * Related publications:
- * Fenwick, Peter M. "A new data structure for cumulative frequency tables." Software: Practice and Experience 24.3 (1994): 327-336.
- * Fenwick, P. A New Data sturcture for cumulative Probability Tables: an Improved Frequency to Symbol Algorithm. Department of Computer Science, The University of Auckland, New Zealand, 1995.
+ * Fenwick, Peter M. "A New Data Structure for Cumulative Frequency Tables." Software: Practice and Experience 24.3 (1994): 327-336.
+ * Fenwick, P. A New Data Structure for Cumulative Probability Tables: an Improved Frequency to Symbol Algorithm. Department of Computer Science, The University of Auckland, New Zealand, 1995.
  */
 
 #pragma once
@@ -90,7 +90,6 @@ struct AdaptiveStatisticsModule {
 	}
 	void halve()
 	{
-// 		std::exit(1);
 		for (TS i = 0; i < n; ++i) {
 			inc_impl(i, -(frequency(i) >> 1));
 		}
