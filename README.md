@@ -43,11 +43,12 @@ If you decide to use our code or code based on this project in your application,
 ```
 @inproceedings{Buelow2017Meshcomp,
 	title = {Compression of Non-Manifold Polygonal Meshes Revisited},
-	author = {Max von Buelow, Stefan Guthe and Michael Goesele},
+	author = {{von Buelow}, Max and Guthe, Stefan and Goesele, Michael},
 	booktitle = {Proceedings of the Conference on Vision, Modeling and Visualization},
 	series = {VMV},
 	year = {2017},
-	month = {September}
+	month = {September},
+	doi = {10.2312/vmv.20171266}
 }
 ```
 A PDF reprint is available on the project page.
