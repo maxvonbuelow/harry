@@ -214,11 +214,11 @@ struct reader {
 	}
 	uint32_t attr_ghist(mesh::listidx_t l)
 	{
-		models.attr_ghist[l]->template decode<uint32_t>(coder);
+		return models.attr_ghist[l]->template decode<uint32_t>(coder);
 	}
 	uint16_t attr_lhist(mesh::listidx_t l)
 	{
-		models.attr_lhist[l]->template decode<uint16_t>(coder);
+		return models.attr_lhist[l]->template decode<uint16_t>(coder);
 	}
 	mesh::regidx_t reg_face()
 	{

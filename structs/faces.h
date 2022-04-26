@@ -93,7 +93,7 @@ struct Faces {
 	}
 	EdgeIterator edge_end()
 	{
-		return EdgeIterator{ NULL, have_edges.size(), have_edges.size() };
+		return EdgeIterator{ NULL, int(have_edges.size()), int(have_edges.size()) };
 	}
 };
 
