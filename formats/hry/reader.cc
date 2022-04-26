@@ -8,6 +8,7 @@
  */
 
 #include <stdexcept>
+#include <string>
 
 #include "reader.h"
 
@@ -15,6 +16,7 @@
 #include "attrcode.h"
 #include "io.h"
 #include "cbm/decoder.h"
+#include "utils/endian.h"
 #include "utils/progress.h"
 
 namespace hry {

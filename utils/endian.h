@@ -68,8 +68,10 @@
 
 #elif defined(__WINDOWS__)
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <winsock2.h>
-#include <sys/param.h>
+#pragma comment(lib, "Ws2_32.lib")
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 
