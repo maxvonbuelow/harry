@@ -42,21 +42,21 @@ Our program is licensed under the liberal BSD 3-Clause license included as LICEN
 If you decide to use our code or code based on this project in your application, please make sure to cite our VMV 2017 paper:
 
 ```
-@inproceedings{Buelow2017Meshcomp,
-	title = {Compression of Non-Manifold Polygonal Meshes Revisited},
-	author = {von Buelow, Max and Guthe, Stefan and Goesele, Michael},
-	booktitle = {Proceedings of the Conference on Vision, Modeling and Visualization},
-	series = {VMV},
-	year = {2017},
-	month = sep,
-	doi = {10.2312/vmv.20171266}
-}
+@inproceedings{10.2312/vmv.20171266,
+    title = {{Compression of Non-Manifold Polygonal Meshes Revisited}},
+    author = {von Buelow, Max and Guthe, Stefan and Goesele, Michael},
+    booktitle = {Vision, Modeling \& Visualization},
+    editor = {Hullin, Matthias and Klein, Reinhard and Schultz, Thomas and Yao, Angela},
+    year = {2017},
+    month = {sep},
+    publisher = {The Eurographics Association},
+    doi = {10.2312/vmv.20171266},
+    isbn = {978-3-03868-049-9},
+    location = {Bonn, Germany}
+} 
 ```
-A PDF reprint is available on the project page.
 
 
 Contact
 ------
 For any trouble with building, using or extending this software, please use the project's integrated issue tracker. We'll be happy to help you there or discuss feature requests.
-
-For requests not matching the above, please contact the maintainer at max.von.buelow(at)gcc.tu-darmstadt.de.
